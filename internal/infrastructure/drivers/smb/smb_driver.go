@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/wentf9/MyGoFileHub/internal/domain/vfs"
@@ -122,6 +123,12 @@ func (d *SMBDriver) List(ctx context.Context, path string) ([]vfs.FileInfo, erro
 
 func (d *SMBDriver) Open(ctx context.Context, path string) (io.ReadCloser, error) {
 	return d.share.Open(d.normalizePath(path))
+}
+
+func (d *SMBDriver) OpenFile(ctx context.Context, path string, flag int, perm os.FileMode) (vfs.File, error) {
+	normPath := d.normalizePath(path)
+	// go-smb2 的 OpenFile 也返回实现了 vfs.File 的对象
+	return d.share.OpenFile(normPath, flag, perm)
 }
 
 func (d *SMBDriver) Create(ctx context.Context, path string, reader io.Reader, size int64) error {

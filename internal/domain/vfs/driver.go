@@ -3,17 +3,8 @@ package vfs
 import (
 	"context"
 	"io"
-	"time"
+	"io/fs"
 )
-
-// FileInfo 是系统内部通用的文件元数据模型，屏蔽底层差异
-type FileInfo struct {
-	Name    string
-	Size    int64
-	IsDir   bool
-	ModTime time.Time
-	// 可以扩展 MIME type, ETag 等
-}
 
 // StorageDriver 定义了所有存储源必须具备的行为
 // Context 用于处理超时和取消（如下载中断）
@@ -30,6 +21,8 @@ type StorageDriver interface {
 
 	// Open 打开文件流进行读取 (用于在线播放、下载)
 	Open(ctx context.Context, path string) (io.ReadCloser, error)
+
+	OpenFile(ctx context.Context, path string, flag int, perm fs.FileMode) (File, error)
 
 	// Create 创建或覆盖文件 (用于上传、离线下载写入)
 	// reader 是输入流，size 是预估大小（某些协议如 WebDAV 需要预知大小）

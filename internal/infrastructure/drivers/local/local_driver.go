@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,6 +109,15 @@ func (d *LocalDriver) Open(ctx context.Context, path string) (io.ReadCloser, err
 		return nil, err
 	}
 	return os.Open(realPath)
+}
+
+func (d *LocalDriver) OpenFile(ctx context.Context, path string, flag int, perm fs.FileMode) (vfs.File, error) {
+	realPath, err := d.safePath(path)
+	if err != nil {
+		return nil, err
+	}
+	// os.OpenFile 直接返回 *os.File，它完美实现了 vfs.File 接口
+	return os.OpenFile(realPath, flag, perm)
 }
 
 func (d *LocalDriver) Create(ctx context.Context, path string, reader io.Reader, size int64) error {

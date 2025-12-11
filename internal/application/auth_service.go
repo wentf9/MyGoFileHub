@@ -24,24 +24,18 @@ func NewAuthService(repo repository.UserRepository) *AuthService {
 }
 
 // Login 验证并返回 Token
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
-	// 1. 查询用户
-	user, err := s.userRepo.FindByUsername(ctx, username)
+func (s *AuthService) LoginJwt(ctx context.Context, username, password string) (string, error) {
+	ctx, err := s.LoginCheck(ctx, username, password)
 	if err != nil {
-		return "", errors.New("invalid username or password") // 模糊报错，防止枚举攻击
+		return "", err
 	}
-
-	// 2. 验证密码
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		return "", errors.New("invalid username or password")
-	}
-
-	// 3. 生成 JWT Token
+	userId := ctx.Value("userID").(uint)
+	role := ctx.Value("role").(string)
+	// 生成 JWT Token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"role":     user.Role,
+		"user_id":  userId,
+		"username": username,
+		"role":     role,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24小时过期
 	})
 
@@ -51,6 +45,23 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	}
 
 	return tokenString, nil
+}
+
+func (s *AuthService) LoginCheck(ctx context.Context, username, password string) (context.Context, error) {
+	// 1. 查询用户
+	user, err := s.userRepo.FindByUsername(ctx, username)
+	if err != nil {
+		return ctx, errors.New("invalid username or password") // 模糊报错，防止枚举攻击
+	}
+
+	// 2. 验证密码
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return ctx, errors.New("invalid username or password")
+	}
+	ctx = context.WithValue(ctx, "userID", user.ID)
+	ctx = context.WithValue(ctx, "role", user.Role)
+	return ctx, nil
 }
 
 // Register 注册新用户 (用于初始化管理员)

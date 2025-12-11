@@ -27,3 +27,9 @@ type SourceRepository interface {
 // 	UpdateStatus(ctx context.Context, id uint, status int, progress float64) error
 // 	FindPending(ctx context.Context) ([]*model.DownloadTask, error)
 // }
+
+// PermissionRepository 用户权限存取
+type PermissionRepository interface {
+	FindByUserAndSource(ctx context.Context, userID, sourceID uint) ([]*model.UserPermission, error)
+	Save(ctx context.Context, perm *model.UserPermission) error
+}

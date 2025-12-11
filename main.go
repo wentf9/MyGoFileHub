@@ -46,9 +46,11 @@ func main() {
 	// 3. 初始化 Repository
 	sourceRepo := persistence.NewSourceRepository(db)
 	userRepo := persistence.NewUserRepository(db)
+	permRepo := persistence.NewPermissionRepository(db)
 
 	// 4. 初始化 Service (注入 Repo)
-	fileService := application.NewFileService(sourceRepo)
+	permService := application.NewPermissionService(permRepo, userRepo)
+	fileService := application.NewFileService(sourceRepo, permService)
 	authService := application.NewAuthService(userRepo)
 
 	// --- Seeding: 创建默认管理员 ---
@@ -70,7 +72,7 @@ func main() {
 
 	// 6. 启动
 	fmt.Println("Server starting on :8080...")
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":8081"); err != nil {
 		panic(err)
 	}
 }
