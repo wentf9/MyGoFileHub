@@ -28,7 +28,7 @@ func (h *FileHandler) List(c *gin.Context) {
 	}
 
 	// 调用 Application 层
-	files, err := h.service.ListFiles(c.Request.Context(), sourceID, path)
+	files, err := h.service.ListFiles(c, sourceID, path)
 	if err != nil {
 		// 实际项目中应根据 error 类型返回 403, 404 或 500
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

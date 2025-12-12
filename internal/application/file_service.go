@@ -24,7 +24,7 @@ func NewFileService(repo repository.SourceRepository, perm *PermissionService) *
 }
 
 var dirverCache = sync.Map{} // map[uint64]vfs.StorageDriver
-var mu sync.Mutex
+var dirverMu sync.Mutex
 
 // ListFiles 列出文件
 // sourceIDStr: 接收 string 类型的 ID，在 Service 层内部转为 uint
@@ -58,8 +58,8 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 			return nil, fmt.Errorf("invalid driver type in cache")
 		}
 	}
-	mu.Lock()
-	defer mu.Unlock()
+	dirverMu.Lock()
+	defer dirverMu.Unlock()
 	// 2. 再次检查缓存，防止并发重复创建
 	dirver, ok = dirverCache.Load(sourceID)
 	if ok {
@@ -83,30 +83,28 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 	if err != nil {
 		return nil, err
 	}
-	// 5. 初始化驱动 (传入从数据库取出的 Config JSONMap)
-	// source.Config 本身就是 map[string]interface{}，可以直接传
-	if err := driver.Init(ctx, source.Config); err != nil {
-		return nil, fmt.Errorf("failed to init driver: %v", err)
-	}
 	// ---------------------------------------------------------
-	// 获取当前用户并包裹 SecureDriver
+	// 5. 获取当前用户并包裹 SecureDriver
 	// ---------------------------------------------------------
-
-	// 1. 从 Context 中提取 UserID (由 JWT 中间件设置)
-	userIDVal := ctx.Value("userID")
-	if userIDVal == nil {
-		// 如果没有登录(或者内部调用)，视情况处理。
-		// 这里假设必须登录，否则返回 error 或者是仅限 Admin 的 Context
-		return nil, errors.New("unauthorized: user context missing")
-	}
-	userID := userIDVal.(uint)
-
-	// 2. 定义检查闭包
-	checker := func(c context.Context, path string, action string) bool {
+	// 定义检查闭包
+	checker := func(c context.Context, path string, action string) (bool, error) {
+		// 从 Context 中提取 UserID (由 JWT 中间件设置)
+		userIDVal := c.Value("userID")
+		if userIDVal == nil {
+			// 如果没有登录(或者内部调用)，视情况处理。
+			// 这里假设必须登录，否则返回 error 或者是仅限 Admin 的 Context
+			return false, errors.New("unauthorized: user context missing")
+		}
+		userID := userIDVal.(uint)
 		// 调用 PermissionService 进行真正的数据库校验
-		return s.permService.CheckPermission(c, userID, uint(sID), path, action)
+		return s.permService.CheckPermission(c, userID, uint(sID), path, action), nil
 	}
 	secureDriver := vfs.NewSecureDriver(driver, checker)
+	// 6. 初始化驱动 (传入从数据库取出的 Config JSONMap)
+	// source.Config 本身就是 map[string]interface{}，可以直接传
+	if err := secureDriver.Init(ctx, source.Config); err != nil {
+		return nil, fmt.Errorf("failed to init driver: %v", err)
+	}
 	dirverCache.Store(sourceID, secureDriver)
 	return secureDriver, nil
 }

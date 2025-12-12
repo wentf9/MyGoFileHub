@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -53,10 +52,8 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	var ctx context.Context
-	var err error
 	// 调用 AuthService
-	if ctx, err = h.authService.LoginCheck(c.Request.Context(), username, password); err != nil {
+	if err := h.authService.LoginBasic(c.Request.Context(), username, password); err != nil {
 		fmt.Printf("[Debug] Auth failed for user: %s\n", username)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -81,7 +78,7 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	// 4. 获取驱动
 	// -------------------------------------------------------------
 	fmt.Printf("[Debug] Getting driver for sourceID: %s\n", sourceID)
-	driver, err := h.fileService.GetDriver(ctx, sourceID)
+	driver, err := h.fileService.GetDriver(c.Request.Context(), sourceID)
 	if err != nil {
 		fmt.Printf("[Debug] Driver not found: %v\n", err)
 		c.AbortWithStatus(http.StatusNotFound) // <--- 如果是这里报404，说明数据库没查到ID
