@@ -55,7 +55,7 @@ func (s *AuthService) LoginJwt(ctx context.Context, username, password string) (
 	return tokenString, nil
 }
 
-func (s *AuthService) LoginBasic(ctx context.Context, username, password string) error {
+func (s *AuthService) LoginBasic(ctx context.Context, username, password string) (*model.User, error) {
 	var user *model.User
 	var err error
 	if vaule, ok := userCache.Load(username); ok {
@@ -64,7 +64,7 @@ func (s *AuthService) LoginBasic(ctx context.Context, username, password string)
 		// 查询用户
 		user, err = s.userRepo.FindByUsername(ctx, username)
 		if err != nil {
-			return errors.New("invalid username or password") // 模糊报错，防止枚举攻击
+			return nil, errors.New("invalid username or password") // 模糊报错，防止枚举攻击
 		}
 		value, loaded := userCache.LoadOrStore(username, user)
 		if loaded {
@@ -75,9 +75,9 @@ func (s *AuthService) LoginBasic(ctx context.Context, username, password string)
 	// 验证密码
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return errors.New("invalid username or password")
+		return nil, errors.New("invalid username or password")
 	}
-	return nil
+	return user, nil
 }
 
 // Register 注册新用户 (用于初始化管理员)

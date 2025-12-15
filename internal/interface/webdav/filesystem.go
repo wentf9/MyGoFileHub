@@ -15,9 +15,7 @@ type DriverFileSystem struct {
 }
 
 func (fsys *DriverFileSystem) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	// 我们的 Driver 需要补充 Mkdir 方法，或者暂时用 Create 模拟
-	// 这里为了演示，假设 Driver 已经有了 Mkdir
-	return fsys.Driver.Create(ctx, name+"/.dir_placeholder", nil, 0)
+	return fsys.Driver.Create(ctx, name, nil, 0)
 }
 
 func (fsys *DriverFileSystem) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {

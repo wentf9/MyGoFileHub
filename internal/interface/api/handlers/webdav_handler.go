@@ -29,38 +29,7 @@ func NewWebDAVHandler(fs *application.FileService, as *application.AuthService) 
 // 路由规则: /webdav/:source_id/*path
 func (h *WebDAVHandler) Handler(c *gin.Context) {
 	// -------------------------------------------------------------
-	// 1. OPTIONS 请求免登处理 (兼容 Windows)
-	// -------------------------------------------------------------
-	if c.Request.Method == "OPTIONS" {
-		// 只有在没有 Authorization 头时才放行，避免影响正常逻辑
-		if _, _, ok := c.Request.BasicAuth(); !ok {
-			fmt.Println("[Debug] Handling OPTIONS bypass for Windows")
-			c.Header("DAV", "1, 2")
-			c.Header("Allow", "OPTIONS, PROPFIND, PUT, MKCOL, GET, HEAD, DELETE, COPY, MOVE")
-			c.Header("MS-Author-Via", "DAV")
-			c.Status(http.StatusOK)
-			return
-		}
-	}
-
-	// -------------------------------------------------------------
-	// 2. Basic Auth 鉴权
-	// -------------------------------------------------------------
-	username, password, ok := c.Request.BasicAuth()
-	if !ok {
-		c.Header("WWW-Authenticate", `Basic realm="GoFile WebDAV"`)
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	// 调用 AuthService
-	if err := h.authService.LoginBasic(c.Request.Context(), username, password); err != nil {
-		fmt.Printf("[Debug] Auth failed for user: %s\n", username)
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	// -------------------------------------------------------------
-	// 3. 核心修复：处理尾部斜杠 (Slash Hack)
+	// 处理尾部斜杠 (Slash Hack)
 	// Windows 请求 /webdav/1 -> 我们强制改为 /webdav/1/
 	// -------------------------------------------------------------
 	sourceID := c.Param("source_id")
@@ -75,7 +44,7 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	}
 
 	// -------------------------------------------------------------
-	// 4. 获取驱动
+	// 获取驱动
 	// -------------------------------------------------------------
 	fmt.Printf("[Debug] Getting driver for sourceID: %s\n", sourceID)
 	driver, err := h.fileService.GetDriver(c.Request.Context(), sourceID)
@@ -86,7 +55,7 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	}
 
 	// -------------------------------------------------------------
-	// 5. 获取或创建单例 LockSystem
+	// 获取或创建单例 LockSystem
 	// -------------------------------------------------------------
 	// 尝试从 map 中加载这个 sourceID 对应的锁系统
 	var lockSystem webdav.LockSystem
@@ -103,7 +72,7 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	}
 
 	// -------------------------------------------------------------
-	// 5. 构造 WebDAV 处理逻辑
+	// 构造 WebDAV 处理逻辑
 	// -------------------------------------------------------------
 	// 构造前缀：必须以 "/" 结尾，与上面修改过的 Request Path 保持一致
 	prefix := "/webdav/" + sourceID + "/"

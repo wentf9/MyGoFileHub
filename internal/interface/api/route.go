@@ -31,10 +31,10 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	v1 := r.Group("/api/v1")
 	{
 		// 公开接口
-		v1.POST("/login", authHandler.Login)
+		v1.POST("/login", authHandler.Login).Use(middleware.ClientCheck())
 		// 保护接口 (使用 JWTAuth 中间件)
 		protected := v1.Group("/")
-		protected.Use(middleware.JWTAuth())
+		protected.Use(middleware.ClientCheck(), middleware.JWTAuth())
 		{
 			files := protected.Group("/files")
 			files.GET("/list", fileHandler.List)
@@ -49,13 +49,18 @@ func InitRouter(fileService *application.FileService, authService *application.A
 		"OPTIONS", "HEAD", "GET", "PUT", "POST", "DELETE",
 		"PROPFIND", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK",
 	}
-	// 循环注册所有方法
-	for _, method := range webdavMethods {
-		// 路由 1: 匹配 /webdav/1/foo
-		r.Handle(method, "/webdav/:source_id/*path", webDAVHandler.Handler)
+	webdav := r.Group("/webdav")
+	{
+		webdav.Use(middleware.ClientCheck(), middleware.BasicAuth(authService))
+		// 循环注册所有方法
+		for _, method := range webdavMethods {
+			// 路由 1: 匹配 /webdav/1/foo
+			webdav.Handle(method, "/:source_id/*path", webDAVHandler.Handler)
 
-		// 路由 2: 匹配 /webdav/1 (必须单独注册，否则不带斜杠时会 404)
-		r.Handle(method, "/webdav/:source_id", webDAVHandler.Handler)
+			// 路由 2: 匹配 /webdav/1 (必须单独注册，否则不带斜杠时会 404)
+			webdav.Handle(method, "/:source_id", webDAVHandler.Handler)
+		}
 	}
+
 	return r
 }

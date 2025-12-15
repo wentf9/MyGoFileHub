@@ -86,7 +86,7 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 	// ---------------------------------------------------------
 	// 5. 获取当前用户并包裹 SecureDriver
 	// ---------------------------------------------------------
-	// 定义检查闭包
+	// 定义检查函数
 	checker := func(c context.Context, path string, action string) (bool, error) {
 		// 从 Context 中提取 UserID (由 JWT 中间件设置)
 		userIDVal := c.Value("userID")

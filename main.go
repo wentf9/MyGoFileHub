@@ -6,21 +6,20 @@ import (
 	"log"
 	"os"
 
+	"github.com/wentf9/MyGoFileHub/config"
 	"github.com/wentf9/MyGoFileHub/internal/application"
 	"github.com/wentf9/MyGoFileHub/internal/domain/model"
+	_ "github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers/local"
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/persistence"
 	"github.com/wentf9/MyGoFileHub/internal/interface/api"
-
-	// !!! 极其重要：必须引入 driver 包以触发 init() 注册
-	_ "github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers/local"
 )
 
 func main() {
 	// 1. 准备测试目录
-	_ = os.MkdirAll("./test_storage", 0755)
+	_ = os.MkdirAll(config.AppConfig.DataDir+"/test_storage", 0755)
 
 	// 2. 初始化数据库
-	db, err := persistence.InitDB("gofile.db")
+	db, err := persistence.InitDB(config.AppConfig.DataDir + "/gofile.db")
 	if err != nil {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
@@ -35,7 +34,7 @@ func main() {
 			Name: "Local Test Disk",
 			Type: "local",
 			Config: model.JSONMap{
-				"root_path": "./test_storage",
+				"root_path": config.AppConfig.DataDir + "./test_storage",
 			},
 		}
 		db.Create(&testSource)
@@ -71,8 +70,8 @@ func main() {
 	r := api.InitRouter(fileService, authService)
 
 	// 6. 启动
-	fmt.Println("Server starting on :8080...")
-	if err := r.Run(":8081"); err != nil {
+	fmt.Printf("Server starting on :%s...", config.AppConfig.ServerPort)
+	if err := r.Run(":" + config.AppConfig.ServerPort); err != nil {
 		panic(err)
 	}
 }
