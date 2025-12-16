@@ -88,16 +88,15 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 	// ---------------------------------------------------------
 	// 定义检查函数
 	checker := func(c context.Context, path string, action string) (bool, error) {
-		// 从 Context 中提取 UserID (由 JWT 中间件设置)
-		userIDVal := c.Value("userID")
-		if userIDVal == nil {
+		// 从 Context 中提取 username (由 JWT 中间件设置)
+		username := c.Value("username")
+		if username == nil {
 			// 如果没有登录(或者内部调用)，视情况处理。
 			// 这里假设必须登录，否则返回 error 或者是仅限 Admin 的 Context
 			return false, errors.New("unauthorized: user context missing")
 		}
-		userID := userIDVal.(uint)
 		// 调用 PermissionService 进行真正的数据库校验
-		return s.permService.CheckPermission(c, userID, uint(sID), path, action), nil
+		return s.permService.CheckPermission(c, username.(string), uint(sID), path, action), nil
 	}
 	secureDriver := vfs.NewSecureDriver(driver, checker)
 	// 6. 初始化驱动 (传入从数据库取出的 Config JSONMap)

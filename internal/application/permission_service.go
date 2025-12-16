@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/wentf9/MyGoFileHub/internal/domain/model"
 	"github.com/wentf9/MyGoFileHub/internal/domain/repository"
@@ -13,17 +15,30 @@ type PermissionService struct {
 	userRepo repository.UserRepository
 }
 
+var permissionCache = sync.Map{} // 用于存储用户的权限数据
+
 func NewPermissionService(pRepo repository.PermissionRepository, uRepo repository.UserRepository) *PermissionService {
 	return &PermissionService{permRepo: pRepo, userRepo: uRepo}
 }
 
 // CheckPermission 检查细粒度权限
 // action: "read" 或 "write"
-func (s *PermissionService) CheckPermission(ctx context.Context, userID, sourceID uint, path string, action string) bool {
+func (s *PermissionService) CheckPermission(ctx context.Context, username string, sourceID uint, path string, action string) bool {
 	// 1. 获取用户信息
-	user, err := s.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return false
+	var user *model.User
+	var err error
+	if vaule, ok := userCache.Load(username); ok {
+		user = vaule.(*model.User)
+	} else {
+		// 查询用户
+		user, err = s.userRepo.FindByUsername(ctx, username)
+		if err != nil {
+			return false
+		}
+		value, loaded := userCache.LoadOrStore(username, user)
+		if loaded {
+			user = value.(*model.User)
+		}
 	}
 
 	// 2. 超级管理员拥有所有权限
@@ -32,10 +47,20 @@ func (s *PermissionService) CheckPermission(ctx context.Context, userID, sourceI
 	}
 
 	// 3. 获取该用户在该源下的所有权限规则
-	// 优化点：这里可以在内存做缓存 (Redis/MemoryCache)，避免每次文件操作都查库
-	perms, err := s.permRepo.FindByUserAndSource(ctx, userID, sourceID)
-	if err != nil || len(perms) == 0 {
-		return false // 默认拒绝 (白名单模式)
+
+	var perms []*model.UserPermission
+	if vaule, ok := permissionCache.Load(username + "_" + strconv.FormatUint(uint64(sourceID), 10)); ok {
+		perms = vaule.([]*model.UserPermission)
+	} else {
+		perms, err = s.permRepo.FindByUserAndSource(ctx, user.ID, sourceID)
+		if err != nil || len(perms) == 0 {
+			permissionCache.Store(username+"_"+strconv.FormatUint(uint64(sourceID), 10), []*model.UserPermission{})
+			return false
+		}
+		value, loaded := permissionCache.LoadOrStore(username+"_"+strconv.FormatUint(uint64(sourceID), 10), perms)
+		if loaded {
+			perms = value.([]*model.UserPermission)
+		}
 	}
 
 	// 4. 最长前缀匹配算法

@@ -44,9 +44,7 @@ func BasicAuth(authService *application.AuthService) gin.HandlerFunc {
 		}
 		// 鉴权成功，注入用户信息到 Context
 		ctx := c.Request.Context()
-		ctx = context.WithValue(c.Request.Context(), "userID", user.ID)
 		ctx = context.WithValue(ctx, "username", user.Username)
-		ctx = context.WithValue(ctx, "role", user.Role)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}

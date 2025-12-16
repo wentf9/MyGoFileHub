@@ -14,7 +14,7 @@ type StorageDriver interface {
 
 	// Init 初始化连接
 	// config 是 JSON 解析后的 map，包含 host, user, password 等
-	Init(ctx context.Context, config map[string]interface{}) error
+	Init(ctx context.Context, config map[string]any) error
 
 	// List 列出指定路径下的文件
 	List(ctx context.Context, path string) ([]FileInfo, error)

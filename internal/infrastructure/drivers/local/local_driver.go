@@ -33,7 +33,7 @@ func (d *LocalDriver) DriverName() string {
 
 // Init 初始化，解析配置
 // config 示例: {"root_path": "/var/www/uploads"}
-func (d *LocalDriver) Init(ctx context.Context, config map[string]interface{}) error {
+func (d *LocalDriver) Init(ctx context.Context, config map[string]any) error {
 	root, ok := config["root_path"].(string)
 	if !ok || root == "" {
 		return fmt.Errorf("local driver requires 'root_path' in config")
