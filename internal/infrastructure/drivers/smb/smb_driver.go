@@ -147,6 +147,11 @@ func (d *SMBDriver) Create(ctx context.Context, path string, reader io.Reader, s
 	return err
 }
 
+func (d *SMBDriver) Mkdir(ctx context.Context, path string, perm os.FileMode) error {
+	normPath := d.normalizePath(path)
+	return d.share.MkdirAll(normPath, perm)
+}
+
 func (d *SMBDriver) Stat(ctx context.Context, path string) (vfs.FileInfo, error) {
 	info, err := d.share.Stat(d.normalizePath(path))
 	if err != nil {

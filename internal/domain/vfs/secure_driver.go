@@ -93,6 +93,16 @@ func (d *SecureDriver) Create(ctx context.Context, path string, reader io.Reader
 	return d.base.Create(ctx, path, reader, size)
 }
 
+func (d *SecureDriver) Mkdir(ctx context.Context, path string, perm fs.FileMode) error {
+	if ok, err := d.checker(ctx, path, "write"); !ok {
+		if err != nil {
+			return err
+		}
+		return os.ErrPermission
+	}
+	return d.base.Mkdir(ctx, path, perm)
+}
+
 func (d *SecureDriver) Delete(ctx context.Context, path string) error {
 	if ok, err := d.checker(ctx, path, "write"); !ok {
 		if err != nil {

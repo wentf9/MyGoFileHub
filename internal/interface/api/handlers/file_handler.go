@@ -17,18 +17,18 @@ func NewFileHandler(s *application.FileService) *FileHandler {
 }
 
 // List 处理 /files/list 请求
-// Query Param: source_id, path
+// Query Param: source_key, path
 func (h *FileHandler) List(c *gin.Context) {
-	sourceID := c.Query("source_id")
+	sourceKey := c.Query("source_key")
 	path := c.DefaultQuery("path", "/") // 默认为根目录
 
-	if sourceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "source_id is required"})
+	if sourceKey == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "source_key is required"})
 		return
 	}
 
 	// 调用 Application 层
-	files, err := h.service.ListFiles(c.Request.Context(), sourceID, path)
+	files, err := h.service.ListFiles(c.Request.Context(), sourceKey, path)
 	if err != nil {
 		// 实际项目中应根据 error 类型返回 403, 404 或 500
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

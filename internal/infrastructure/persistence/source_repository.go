@@ -27,6 +27,14 @@ func (r *SourceRepository) FindByID(ctx context.Context, id uint) (*model.Storag
 	return &source, nil
 }
 
+func (r *SourceRepository) FindByKey(ctx context.Context, key string) (*model.StorageSource, error) {
+	var source model.StorageSource
+	if err := r.db.WithContext(ctx).Where("key = ?", key).First(&source).Error; err != nil {
+		return nil, err
+	}
+	return &source, nil
+}
+
 func (r *SourceRepository) FindAll(ctx context.Context) ([]*model.StorageSource, error) {
 	var sources []*model.StorageSource
 	if err := r.db.WithContext(ctx).Find(&sources).Error; err != nil {

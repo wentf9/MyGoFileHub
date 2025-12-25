@@ -55,10 +55,10 @@ func InitRouter(fileService *application.FileService, authService *application.A
 		// 循环注册所有方法
 		for _, method := range webdavMethods {
 			// 路由 1: 匹配 /webdav/1/foo
-			webdav.Handle(method, "/:source_id/*path", webDAVHandler.Handler)
+			webdav.Handle(method, "/:source_key/*path", webDAVHandler.Handler)
 
 			// 路由 2: 匹配 /webdav/1 (必须单独注册，否则不带斜杠时会 404)
-			webdav.Handle(method, "/:source_id", webDAVHandler.Handler)
+			webdav.Handle(method, "/:source_key", webDAVHandler.Handler)
 		}
 	}
 

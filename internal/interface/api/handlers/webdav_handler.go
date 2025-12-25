@@ -26,28 +26,28 @@ func NewWebDAVHandler(fs *application.FileService, as *application.AuthService) 
 }
 
 // ServeHTTP 处理 WebDAV 请求
-// 路由规则: /webdav/:source_id/*path
+// 路由规则: /webdav/:source_key/*path
 func (h *WebDAVHandler) Handler(c *gin.Context) {
 	// -------------------------------------------------------------
 	// 处理尾部斜杠 (Slash Hack)
 	// Windows 请求 /webdav/1 -> 我们强制改为 /webdav/1/
 	// -------------------------------------------------------------
-	sourceID := c.Param("source_id")
+	sourceKey := c.Param("source_key")
 
 	// 获取原始请求路径
 	reqPath := c.Request.URL.Path
 
-	// 如果请求路径以 sourceID 结尾（例如 /webdav/1），说明缺少斜杠
+	// 如果请求路径以 sourceKey 结尾（例如 /webdav/1），说明缺少斜杠
 	// 我们手动补全它，这样 webdav 库就会认为我们在访问根目录 "/"，而不是空 ""
-	if strings.HasSuffix(reqPath, sourceID) {
+	if strings.HasSuffix(reqPath, sourceKey) {
 		c.Request.URL.Path += "/"
 	}
 
 	// -------------------------------------------------------------
 	// 获取驱动
 	// -------------------------------------------------------------
-	fmt.Printf("[Debug] Getting driver for sourceID: %s\n", sourceID)
-	driver, err := h.fileService.GetDriver(c.Request.Context(), sourceID)
+	fmt.Printf("[Debug] Getting driver for sourceKey: %s\n", sourceKey)
+	driver, err := h.fileService.GetDriver(c.Request.Context(), sourceKey)
 	if err != nil {
 		fmt.Printf("[Debug] Driver not found: %v\n", err)
 		c.AbortWithStatus(http.StatusNotFound) // <--- 如果是这里报404，说明数据库没查到ID
@@ -60,14 +60,14 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	// 尝试从 map 中加载这个 sourceID 对应的锁系统
 	var lockSystem webdav.LockSystem
 
-	if val, ok := h.lockSystems.Load(sourceID); ok {
+	if val, ok := h.lockSystems.Load(sourceKey); ok {
 		lockSystem = val.(webdav.LockSystem)
 	} else {
 		// 如果不存在，创建一个新的并存入
-		fmt.Printf("[Debug] Creating new LockSystem for SourceID: %s\n", sourceID)
+		fmt.Printf("[Debug] Creating new LockSystem for SourceKey: %s\n", sourceKey)
 		newLS := webdav.NewMemLS()
 		// LoadOrStore 防止并发时的竞争条件
-		actual, _ := h.lockSystems.LoadOrStore(sourceID, newLS)
+		actual, _ := h.lockSystems.LoadOrStore(sourceKey, newLS)
 		lockSystem = actual.(webdav.LockSystem)
 	}
 
@@ -75,7 +75,7 @@ func (h *WebDAVHandler) Handler(c *gin.Context) {
 	// 构造 WebDAV 处理逻辑
 	// -------------------------------------------------------------
 	// 构造前缀：必须以 "/" 结尾，与上面修改过的 Request Path 保持一致
-	prefix := "/webdav/" + sourceID + "/"
+	prefix := "/webdav/" + sourceKey + "/"
 
 	handler := &webdav.Handler{
 		FileSystem: &webdav_adapter.DriverFileSystem{Driver: driver},

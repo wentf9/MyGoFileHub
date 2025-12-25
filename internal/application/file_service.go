@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"sync"
 
 	"github.com/wentf9/MyGoFileHub/internal/domain/repository"
@@ -27,9 +26,9 @@ var dirverCache = sync.Map{} // map[uint64]vfs.StorageDriver
 var dirverMu sync.Mutex
 
 // ListFiles 列出文件
-// sourceIDStr: 接收 string 类型的 ID，在 Service 层内部转为 uint
-func (s *FileService) ListFiles(ctx context.Context, sourceIDStr string, path string) ([]vfs.FileInfo, error) {
-	driver, err := s.GetDriver(ctx, sourceIDStr)
+// sourceKey: 数据库中存储源的Key
+func (s *FileService) ListFiles(ctx context.Context, sourceKey string, path string) ([]vfs.FileInfo, error) {
+	driver, err := s.GetDriver(ctx, sourceKey)
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +36,10 @@ func (s *FileService) ListFiles(ctx context.Context, sourceIDStr string, path st
 }
 
 // GetFileStream 获取文件流 (用于下载或播放)
-// sourceID: 数据库中存储源的ID
+// sourceKey: 数据库中存储源的Key
 // path: 文件在存储源中的相对路径
-func (s *FileService) GetFileStream(ctx context.Context, sourceIDStr string, path string) (io.ReadCloser, error) {
-	driver, err := s.GetDriver(ctx, sourceIDStr)
+func (s *FileService) GetFileStream(ctx context.Context, sourceKey string, path string) (io.ReadCloser, error) {
+	driver, err := s.GetDriver(ctx, sourceKey)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +47,9 @@ func (s *FileService) GetFileStream(ctx context.Context, sourceIDStr string, pat
 	return driver.Open(ctx, path)
 }
 
-func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.StorageDriver, error) {
+func (s *FileService) GetDriver(ctx context.Context, sourceKey string) (vfs.StorageDriver, error) {
 	// 1. 先从缓存获取
-	dirver, ok := dirverCache.Load(sourceID)
+	dirver, ok := dirverCache.Load(sourceKey)
 	if ok {
 		if value, valid := dirver.(vfs.StorageDriver); valid {
 			return value, nil
@@ -61,7 +60,7 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 	dirverMu.Lock()
 	defer dirverMu.Unlock()
 	// 2. 再次检查缓存，防止并发重复创建
-	dirver, ok = dirverCache.Load(sourceID)
+	dirver, ok = dirverCache.Load(sourceKey)
 	if ok {
 		if value, valid := dirver.(vfs.StorageDriver); valid {
 			return value, nil
@@ -70,11 +69,7 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 		}
 	}
 	// 3. 从数据库查询配置
-	sID, err := strconv.ParseUint(sourceID, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid source id")
-	}
-	source, err := s.sourceRepo.FindByID(ctx, uint(sID))
+	source, err := s.sourceRepo.FindByKey(ctx, sourceKey)
 	if err != nil {
 		return nil, fmt.Errorf("storage source not found: %v", err)
 	}
@@ -96,7 +91,7 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 			return false, errors.New("unauthorized: user context missing")
 		}
 		// 调用 PermissionService 进行真正的数据库校验
-		return s.permService.CheckPermission(c, username.(string), uint(sID), path, action), nil
+		return s.permService.CheckPermission(c, username.(string), source.ID, path, action), nil
 	}
 	secureDriver := vfs.NewSecureDriver(driver, checker)
 	// 6. 初始化驱动 (传入从数据库取出的 Config JSONMap)
@@ -104,6 +99,6 @@ func (s *FileService) GetDriver(ctx context.Context, sourceID string) (vfs.Stora
 	if err := secureDriver.Init(ctx, source.Config); err != nil {
 		return nil, fmt.Errorf("failed to init driver: %v", err)
 	}
-	dirverCache.Store(sourceID, secureDriver)
+	dirverCache.Store(sourceKey, secureDriver)
 	return secureDriver, nil
 }

@@ -17,6 +17,7 @@ type UserRepository interface {
 type SourceRepository interface {
 	FindAll(ctx context.Context) ([]*model.StorageSource, error)
 	FindByID(ctx context.Context, id uint) (*model.StorageSource, error)
+	FindByKey(ctx context.Context, key string) (*model.StorageSource, error)
 	Save(ctx context.Context, source *model.StorageSource) error
 	Delete(ctx context.Context, id uint) error
 }

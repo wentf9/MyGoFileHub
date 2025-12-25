@@ -28,6 +28,9 @@ type StorageDriver interface {
 	// reader 是输入流，size 是预估大小（某些协议如 WebDAV 需要预知大小）
 	Create(ctx context.Context, path string, reader io.Reader, size int64) error
 
+	// Mkdir 创建目录
+	Mkdir(ctx context.Context, path string, perm fs.FileMode) error
+
 	// Stat 获取单个文件详情
 	Stat(ctx context.Context, path string) (FileInfo, error)
 

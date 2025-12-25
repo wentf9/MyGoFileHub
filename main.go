@@ -32,6 +32,7 @@ func main() {
 		fmt.Println("Seeding test data...")
 		testSource := model.StorageSource{
 			Name: "Local Test Disk",
+			Key:  "test",
 			Type: "local",
 			Config: model.JSONMap{
 				"root_path": config.AppConfig.DataDir + "./test_storage",

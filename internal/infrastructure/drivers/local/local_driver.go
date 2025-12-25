@@ -145,6 +145,14 @@ func (d *LocalDriver) Create(ctx context.Context, path string, reader io.Reader,
 	return err
 }
 
+func (d *LocalDriver) Mkdir(ctx context.Context, path string, perm fs.FileMode) error {
+	realPath, err := d.safePath(path)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(realPath, perm)
+}
+
 func (d *LocalDriver) Stat(ctx context.Context, path string) (vfs.FileInfo, error) {
 	realPath, err := d.safePath(path)
 	if err != nil {
