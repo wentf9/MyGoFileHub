@@ -35,6 +35,17 @@ func (s *FileService) ListFiles(ctx context.Context, sourceKey string, path stri
 	return driver.List(ctx, path)
 }
 
+func (s *FileService) Stat(ctx context.Context, sourceKey string, path string) (vfs.FileInfo, error) {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if path == "" {
+		return vfs.FileInfo{}, errors.New("path cannot be empty")
+	}
+	if err != nil {
+		return vfs.FileInfo{}, err
+	}
+	return driver.Stat(ctx, path)
+}
+
 // GetFileStream 获取文件流 (用于下载或播放)
 // sourceKey: 数据库中存储源的Key
 // path: 文件在存储源中的相对路径
@@ -45,6 +56,31 @@ func (s *FileService) GetFileStream(ctx context.Context, sourceKey string, path 
 	}
 	// 4. 调用接口方法
 	return driver.Open(ctx, path)
+}
+
+func (s *FileService) Delete(ctx context.Context, sourceKey string, path string) error {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if err != nil {
+		return err
+	}
+	return driver.Delete(ctx, path)
+}
+
+func (s *FileService) GetAllSource(ctx context.Context) ([]vfs.FileInfo, error) {
+	sources, err := s.sourceRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var infos []vfs.FileInfo
+	for _, source := range sources {
+		infos = append(infos, vfs.FileInfo{
+			Name:    source.Key,
+			Size:    0,
+			IsDir:   true,
+			ModTime: source.UpdatedAt,
+		})
+	}
+	return infos, nil
 }
 
 func (s *FileService) GetDriver(ctx context.Context, sourceKey string) (vfs.StorageDriver, error) {

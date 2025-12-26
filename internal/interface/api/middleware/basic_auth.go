@@ -11,15 +11,15 @@ import (
 
 func BasicAuth(authService *application.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Header("DAV", "1, 2")
+		c.Header("MS-Author-Via", "DAV")
 		// -------------------------------------------------------------
 		// 1. OPTIONS 请求免登处理 (兼容 Windows)
 		// -------------------------------------------------------------
 		if c.Request.Method == "OPTIONS" {
 			if _, _, ok := c.Request.BasicAuth(); !ok {
 				fmt.Println("[Debug] Handling OPTIONS bypass for Windows")
-				c.Header("DAV", "1, 2")
 				c.Header("Allow", "OPTIONS, PROPFIND, PUT, MKCOL, GET, HEAD, DELETE, COPY, MOVE")
-				c.Header("MS-Author-Via", "DAV")
 				c.Status(http.StatusOK)
 				return
 			}
@@ -30,7 +30,8 @@ func BasicAuth(authService *application.AuthService) gin.HandlerFunc {
 		// -------------------------------------------------------------
 		username, password, ok := c.Request.BasicAuth()
 		if !ok {
-			c.Header("WWW-Authenticate", `Basic realm="GoFile WebDAV"`)
+			c.Header("WWW-Authenticate", `Basic realm="WebDAV"`)
+			c.Header("Connection", "close")
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

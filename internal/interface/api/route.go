@@ -14,8 +14,8 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	// 关闭 Gin 的自动重定向
 	// Windows WebDAV 客户端不支持在 OPTIONS 请求中遇到 301/307 跳转
 	// ---------------------------------------------------------
-	r.RedirectTrailingSlash = false
-	r.RedirectFixedPath = false
+	// r.RedirectTrailingSlash = false
+	// r.RedirectFixedPath = false
 	// 简单的 CORS 中间件（允许前端跨域调试）
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -27,18 +27,26 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	authHandler := handlers.NewAuthHandler(authService)
 	webDAVHandler := handlers.NewWebDAVHandler(fileService, authService)
 
+	file := r.Group("/")
+	file.Use(middleware.ClientCheck(), middleware.JWTAuth())
+	{
+		file.GET("/", fileHandler.GetHandler)
+		file.GET("/:source_key/*path", fileHandler.GetHandler)
+		file.DELETE("/:source_key/*path", fileHandler.DeleteHandler)
+	}
+
 	// API 版本控制
 	v1 := r.Group("/api/v1")
 	{
 		// 公开接口
 		v1.POST("/login", authHandler.Login).Use(middleware.ClientCheck())
 		// 保护接口 (使用 JWTAuth 中间件)
-		protected := v1.Group("/")
-		protected.Use(middleware.ClientCheck(), middleware.JWTAuth())
-		{
-			files := protected.Group("/files")
-			files.GET("/list", fileHandler.List)
-		}
+		// protected := v1.Group("/")
+		// protected.Use(middleware.ClientCheck(), middleware.JWTAuth())
+		// {
+		// 	files := protected.Group("/files")
+		// 	files.GET("/list", fileHandler.List)
+		// }
 	}
 
 	// -------------------------------------------------------------

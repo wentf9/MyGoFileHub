@@ -15,7 +15,7 @@ type DriverFileSystem struct {
 }
 
 func (fsys *DriverFileSystem) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	return fsys.Driver.Create(ctx, name, nil, 0)
+	return fsys.Driver.Mkdir(ctx, name, perm)
 }
 
 func (fsys *DriverFileSystem) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
