@@ -53,6 +53,7 @@ func main() {
 	fileService := application.NewFileService(sourceRepo, permService)
 	authService := application.NewAuthService(userRepo)
 	userService := application.NewUserService(userRepo)
+	sourceService := application.NewSourceService(sourceRepo)
 
 	// --- Seeding: 创建默认管理员 ---
 	var userCount int64
@@ -69,7 +70,7 @@ func main() {
 	}
 
 	// 5. 初始化 Router
-	r := api.InitRouter(fileService, authService, userService)
+	r := api.InitRouter(fileService, authService, userService, sourceService)
 
 	// 6. 启动
 	fmt.Printf("Server starting on :%s...", config.AppConfig.ServerPort)

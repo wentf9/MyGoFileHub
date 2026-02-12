@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouter(fileService *application.FileService, authService *application.AuthService, userService *application.UserService) *gin.Engine {
+func InitRouter(fileService *application.FileService, authService *application.AuthService, userService *application.UserService, sourceService *application.SourceService) *gin.Engine {
 	r := gin.Default()
 	// ---------------------------------------------------------
 	// 关闭 Gin 的自动重定向
@@ -26,6 +26,7 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	fileHandler := handlers.NewFileHandler(fileService)
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
+	sourceHandler := handlers.NewSourceHandler(sourceService)
 	webDAVHandler := handlers.NewWebDAVHandler(fileService, authService)
 
 	file := r.Group("/")
@@ -60,6 +61,17 @@ func InitRouter(fileService *application.FileService, authService *application.A
 			users.POST("/", userHandler.Create)
 			users.PUT("/:id", userHandler.Update)
 			users.DELETE("/:id", userHandler.Delete)
+		}
+
+		// 存储源管理 (仅限 admin)
+		sources := v1.Group("/sources")
+		sources.Use(middleware.ClientCheck(), middleware.JWTAuth(), middleware.AdminOnly())
+		{
+			sources.GET("/", sourceHandler.List)
+			sources.GET("/:id", sourceHandler.Get)
+			sources.POST("/", sourceHandler.Create)
+			sources.PUT("/:id", sourceHandler.Update)
+			sources.DELETE("/:id", sourceHandler.Delete)
 		}
 
 		// 保护接口 (使用 JWTAuth 中间件)
