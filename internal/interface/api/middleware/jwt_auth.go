@@ -57,6 +57,7 @@ func JWTAuth() gin.HandlerFunc {
 		// 注意：JSON数字解析后通常是float64，需要转型
 		ctx := c.Request.Context()
 		ctx = context.WithValue(ctx, "username", claims["username"])
+		ctx = context.WithValue(ctx, "role", claims["role"])
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}

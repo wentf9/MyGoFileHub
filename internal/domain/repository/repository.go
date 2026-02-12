@@ -8,9 +8,11 @@ import (
 
 // UserRepository 用户数据存取
 type UserRepository interface {
+	FindAll(ctx context.Context) ([]*model.User, error)
 	FindByID(ctx context.Context, id uint) (*model.User, error)
 	FindByUsername(ctx context.Context, username string) (*model.User, error)
 	Save(ctx context.Context, user *model.User) error
+	Delete(ctx context.Context, id uint) error
 }
 
 // SourceRepository 存储源配置存取

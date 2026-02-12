@@ -24,6 +24,14 @@ func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*
 	return &user, nil
 }
 
+func (r *UserRepository) FindAll(ctx context.Context) ([]*model.User, error) {
+	var users []*model.User
+	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *UserRepository) Save(ctx context.Context, user *model.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
@@ -34,4 +42,8 @@ func (r *UserRepository) FindByID(ctx context.Context, id uint) (*model.User, er
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *UserRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.User{}, id).Error
 }

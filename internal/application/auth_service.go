@@ -42,6 +42,7 @@ func (s *AuthService) LoginJwt(ctx context.Context, username, password string) (
 	// 生成 JWT Token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": username,
+		"role":     user.Role,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24小时过期
 	})
 
