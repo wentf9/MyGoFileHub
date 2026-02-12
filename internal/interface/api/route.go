@@ -32,11 +32,21 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	{
 		file.GET("/", fileHandler.GetHandler)
 		file.GET("/:source_key/*path", fileHandler.GetHandler)
+		file.POST("/:source_key/*path", fileHandler.PostHandler)
+		file.PUT("/:source_key/*path", fileHandler.PutHandler)
 		file.DELETE("/:source_key/*path", fileHandler.DeleteHandler)
+
+		// 复杂操作: /@cp/source_key/path?dest=...
+		file.POST("/@cp/:source_key/*path", func(c *gin.Context) {
+			fileHandler.ActionHandler(c, "cp")
+		})
+		file.POST("/@mv/:source_key/*path", func(c *gin.Context) {
+			fileHandler.ActionHandler(c, "mv")
+		})
 	}
 
 	// API 版本控制
-	v1 := r.Group("/api/v1")
+	v1 := r.Group("/@api/v1")
 	{
 		// 公开接口
 		v1.POST("/login", authHandler.Login).Use(middleware.ClientCheck())

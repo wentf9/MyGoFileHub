@@ -40,6 +40,9 @@ type StorageDriver interface {
 	// Rename 重命名或移动（在同一源内）
 	Rename(ctx context.Context, srcPath, dstPath string) error
 
+	// Copy 复制文件或目录（在同一源内）
+	Copy(ctx context.Context, srcPath, dstPath string) error
+
 	// Close 释放资源（如断开 SMB 连接）
 	Close() error
 }

@@ -192,6 +192,76 @@ func (d *LocalDriver) Rename(ctx context.Context, srcPath, dstPath string) error
 	return os.Rename(realSrc, realDst)
 }
 
+func (d *LocalDriver) Copy(ctx context.Context, srcPath, dstPath string) error {
+	realSrc, err := d.safePath(srcPath)
+	if err != nil {
+		return err
+	}
+	realDst, err := d.safePath(dstPath)
+	if err != nil {
+		return err
+	}
+
+	info, err := os.Stat(realSrc)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return d.copyDir(realSrc, realDst)
+	}
+	return d.copyFile(realSrc, realDst)
+}
+
+func (d *LocalDriver) copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
+
+func (d *LocalDriver) copyDir(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := d.copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := d.copyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (d *LocalDriver) Close() error {
 	// 本地文件系统不需要关闭连接，但在 SMB/DB 中这里需要断开 Socket
 	return nil

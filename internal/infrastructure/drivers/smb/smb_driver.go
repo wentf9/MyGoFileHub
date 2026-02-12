@@ -174,6 +174,68 @@ func (d *SMBDriver) Rename(ctx context.Context, srcPath, dstPath string) error {
 	return d.share.Rename(d.normalizePath(srcPath), d.normalizePath(dstPath))
 }
 
+func (d *SMBDriver) Copy(ctx context.Context, srcPath, dstPath string) error {
+	normSrc := d.normalizePath(srcPath)
+	normDst := d.normalizePath(dstPath)
+
+	info, err := d.share.Stat(normSrc)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return d.copyDir(normSrc, normDst)
+	}
+	return d.copyFile(normSrc, normDst)
+}
+
+func (d *SMBDriver) copyFile(src, dst string) error {
+	in, err := d.share.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := d.share.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
+
+func (d *SMBDriver) copyDir(src, dst string) error {
+	entries, err := d.share.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	if err := d.share.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		if entry.Name() == "." || entry.Name() == ".." {
+			continue
+		}
+		srcPath := src + "\\" + entry.Name()
+		dstPath := dst + "\\" + entry.Name()
+
+		if entry.IsDir() {
+			if err := d.copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := d.copyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (d *SMBDriver) Close() error {
 	if d.share != nil {
 		d.share.Umount()

@@ -66,6 +66,38 @@ func (s *FileService) Delete(ctx context.Context, sourceKey string, path string)
 	return driver.Delete(ctx, path)
 }
 
+func (s *FileService) CreateFile(ctx context.Context, sourceKey string, path string, reader io.Reader, size int64) error {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if err != nil {
+		return err
+	}
+	return driver.Create(ctx, path, reader, size)
+}
+
+func (s *FileService) Mkdir(ctx context.Context, sourceKey string, path string) error {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if err != nil {
+		return err
+	}
+	return driver.Mkdir(ctx, path, 0755)
+}
+
+func (s *FileService) Rename(ctx context.Context, sourceKey string, oldPath, newPath string) error {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if err != nil {
+		return err
+	}
+	return driver.Rename(ctx, oldPath, newPath)
+}
+
+func (s *FileService) Copy(ctx context.Context, sourceKey string, srcPath, dstPath string) error {
+	driver, err := s.GetDriver(ctx, sourceKey)
+	if err != nil {
+		return err
+	}
+	return driver.Copy(ctx, srcPath, dstPath)
+}
+
 func (s *FileService) GetAllSource(ctx context.Context) ([]vfs.FileInfo, error) {
 	sources, err := s.sourceRepo.FindAll(ctx)
 	if err != nil {

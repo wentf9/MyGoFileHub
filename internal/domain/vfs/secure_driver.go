@@ -130,6 +130,23 @@ func (d *SecureDriver) Rename(ctx context.Context, srcPath, dstPath string) erro
 	return d.base.Rename(ctx, srcPath, dstPath)
 }
 
+func (d *SecureDriver) Copy(ctx context.Context, srcPath, dstPath string) error {
+	// 复制需要：源路径(读权限) + 目标路径(写权限)
+	if ok, err := d.checker(ctx, srcPath, "read"); !ok {
+		if err != nil {
+			return err
+		}
+		return os.ErrPermission
+	}
+	if ok, err := d.checker(ctx, dstPath, "write"); !ok {
+		if err != nil {
+			return err
+		}
+		return os.ErrPermission
+	}
+	return d.base.Copy(ctx, srcPath, dstPath)
+}
+
 func (d *SecureDriver) Close() error {
 	return d.base.Close()
 }
