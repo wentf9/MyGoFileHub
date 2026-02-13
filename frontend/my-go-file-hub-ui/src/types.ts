@@ -38,9 +38,23 @@ export interface Clipboard {
   action: 'copy' | 'cut' | null;
 }
 
+export interface User {
+  id: number;
+  username: string;
+  role: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  msg: string;
+  error?: string;
+}
+
 export interface AppState {
   tabs: TabSession[];
   activeTabId: string | null;
   clipboard: Clipboard;
   drives: StorageSource[];
+  user: User | null;
+  isAuthenticated: boolean;
 }

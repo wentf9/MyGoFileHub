@@ -1,7 +1,13 @@
-import { FileInfo, StorageSource } from "../types";
+import type { FileInfo, StorageSource, AuthResponse, FileNode } from "../types";
 import { adaptFileNode } from "../lib/adapter";
 
 const API_BASE = "/@api/v1";
+
+interface ApiResponse<T> {
+  code: number;
+  data: T;
+  msg: string;
+}
 
 /**
  * 基础请求封装
@@ -14,22 +20,40 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
   
-  // 根据后端 ClientCheck 中间件要求，可能需要 Client ID
   headers.set("X-Client-Id", "web-browser");
 
   const response = await fetch(path, { ...options, headers });
 
   if (!response.ok) {
     if (response.status === 401) {
-      // 处理登录过期
-      console.error("Unauthorized, redirecting to login...");
+      localStorage.removeItem("token");
     }
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Network response was not ok");
+    throw new Error(errorData.error || errorData.msg || "Network response was not ok");
   }
 
-  return response.json();
+  const json = await response.json();
+  
+  // 适配后端统一响应格式：解包 data
+  if (json && typeof json === 'object' && 'code' in json && 'data' in json) {
+    return (json as ApiResponse<T>).data;
+  }
+
+  return json as T;
 }
+
+/**
+ * 认证服务
+ */
+export const AuthService = {
+  async login(username: string, password: string): Promise<AuthResponse> {
+    return request<AuthResponse>(`${API_BASE}/login`, {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+};
 
 /**
  * 真实 API 调用
@@ -40,15 +64,29 @@ export const FileService = {
    * 后端路由: GET /:source_key/*path
    */
   async fetchFiles(path: string) {
-    // 确保路径以 / 开头且不重复
-    const url = `/${path.replace(/^\/+/, "")}`;
+    const cleanPath = path.replace(/\/+$/, "") || "/";
+    
+    if (cleanPath === "/") {
+      const sources = await this.fetchSources();
+      return (Array.isArray(sources) ? sources : []).map(s => ({
+        id: s.key,
+        name: s.name,
+        size: 0,
+        isDir: true,
+        modTime: s.updatedAt || new Date().toISOString(),
+        fullPath: s.key,
+        extension: "",
+        mimeType: "folder"
+      } as FileNode));
+    }
+
+    const url = `/${cleanPath.replace(/^\/+/, "")}`;
     const data = await request<FileInfo[]>(url);
-    return data.map(f => adaptFileNode(f, path));
+    return (Array.isArray(data) ? data : []).map(f => adaptFileNode(f, cleanPath));
   },
 
   /**
    * 获取所有存储源
-   * 后端路由: GET /@api/v1/sources
    */
   async fetchSources(): Promise<StorageSource[]> {
     return request<StorageSource[]>(`${API_BASE}/sources`);
@@ -56,7 +94,6 @@ export const FileService = {
 
   /**
    * 文件操作 (移动/复制)
-   * 后端路由: POST /@cp/:source_key/*path?dest=...
    */
   async performAction(action: 'cp' | 'mv', sourcePath: string, destPath: string) {
     const url = `/@${action}/${sourcePath.replace(/^\/+/, "")}?dest=${encodeURIComponent(destPath)}`;
@@ -65,7 +102,6 @@ export const FileService = {
 
   /**
    * 删除文件
-   * 后端路由: DELETE /:source_key/*path
    */
   async deleteFile(path: string) {
     const url = `/${path.replace(/^\/+/, "")}`;

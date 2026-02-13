@@ -1,6 +1,6 @@
 import { createStore } from "solid-js/store";
 import type { AppState, TabSession, FileNode } from "../types";
-import { FileService } from "../services/api";
+import { FileService, AuthService } from "../services/api";
 
 const initialState: AppState = {
   tabs: [],
@@ -10,17 +10,47 @@ const initialState: AppState = {
     action: null,
   },
   drives: [],
+  user: null,
+  isAuthenticated: !!localStorage.getItem("token"),
 };
 
 const [state, setState] = createStore<AppState>(initialState);
 
 export const store = {
   state,
+
+  // Auth Actions
+  login: async (username: string, password: string) => {
+    try {
+      const res = await AuthService.login(username, password);
+      localStorage.setItem("token", res.token);
+      setState({ 
+        isAuthenticated: true, 
+        user: { id: 0, username, role: "user" } 
+      });
+      return true;
+    } catch (err) {
+      console.error("Login failed:", err);
+      throw err;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem("token");
+    setState({ isAuthenticated: false, user: null, tabs: [], activeTabId: null, drives: [] });
+  },
   
   // 初始化加载存储源
   loadDrives: async () => {
-    const drives = await FileService.fetchSources();
-    setState("drives", drives);
+    if (!state.isAuthenticated) return;
+    try {
+      const drives = await FileService.fetchSources();
+      setState("drives", drives);
+    } catch (err) {
+      if ((err as Error).message.includes("Unauthorized") || (err as Error).message.includes("token")) {
+        store.logout();
+      }
+    }
   },
 
   // Tab Actions
