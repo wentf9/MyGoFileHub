@@ -53,7 +53,7 @@ func main() {
 	fileService := application.NewFileService(sourceRepo, permService)
 	authService := application.NewAuthService(userRepo)
 	userService := application.NewUserService(userRepo)
-	sourceService := application.NewSourceService(sourceRepo)
+	sourceService := application.NewSourceService(sourceRepo, fileService)
 
 	// --- Seeding: 创建默认管理员 ---
 	var userCount int64

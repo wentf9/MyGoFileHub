@@ -1,8 +1,9 @@
 import { type Component, createEffect, For, Show, onMount } from "solid-js";
 import { store } from "./store";
-import { Plus, X, Folder, HardDrive, Settings, Monitor, ChevronRight, File, Image, Video, FileText, Loader2, LogOut, User as UserIcon } from "lucide-solid";
+import { Plus, X, Folder, HardDrive, Settings, Monitor, ChevronRight, File, Image, Video, FileText, Loader2, LogOut, User as UserIcon, ArrowUp, RotateCw } from "lucide-solid";
 import { type FileNode } from "./types";
 import Login from "./components/Login";
+import SettingsModal from "./components/Settings/SettingsModal";
 
 const FileIcon: Component<{ file: FileNode }> = (props) => {
   switch (props.file.mimeType) {
@@ -30,9 +31,27 @@ const App: Component = () => {
 
   const activeTab = () => store.state.tabs.find(t => t.id === store.state.activeTabId);
 
+  const handleUp = () => {
+    const tab = activeTab();
+    if (!tab || tab.currentPath === "/") return;
+    const segments = tab.currentPath.split("/").filter(p => p !== "");
+    segments.pop();
+    const parentPath = segments.length === 0 ? "/" : "/" + segments.join("/");
+    store.navigate(tab.id, parentPath);
+  };
+
+  const handleRefresh = () => {
+    const tab = activeTab();
+    if (!tab) return;
+    store.navigate(tab.id, tab.currentPath);
+  };
+
   return (
     <Show when={store.state.isAuthenticated} fallback={<Login />}>
       <div class="flex flex-col h-screen w-full bg-slate-50 text-slate-900 select-none">
+        {/* Settings Modal */}
+        <SettingsModal />
+
         {/* TopBar */}
         <header class="h-10 flex items-center px-4 bg-white border-b border-slate-200 gap-4">
           <div class="flex items-center gap-2 font-bold text-blue-600">
@@ -53,7 +72,11 @@ const App: Component = () => {
             >
               <LogOut size={18} />
             </button>
-            <button class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+            <button 
+              onClick={() => store.toggleSettings(true)}
+              class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+              title="System Settings"
+            >
               <Settings size={18} />
             </button>
           </div>
@@ -134,19 +157,58 @@ const App: Component = () => {
           <main class="flex-1 flex flex-col bg-white">
             {/* Breadcrumbs / Address Bar */}
             <div class="h-9 flex items-center px-2 bg-white border-b border-slate-100 text-xs gap-1">
-              <div class="flex items-center gap-1 text-slate-500 hover:bg-slate-100 px-1 py-1 rounded cursor-pointer">
+              <div class="flex items-center gap-0.5 mr-1">
+                <button 
+                  onClick={handleUp}
+                  disabled={activeTab()?.currentPath === "/"}
+                  class="p-1 hover:bg-slate-100 rounded disabled:opacity-30 transition-colors text-slate-600"
+                  title="Up one level"
+                >
+                  <ArrowUp size={14} />
+                </button>
+                <button 
+                  onClick={handleRefresh}
+                  class="p-1 hover:bg-slate-100 rounded transition-colors text-slate-600"
+                  title="Refresh"
+                >
+                  <RotateCw size={14} class={activeTab()?.loading ? "animate-spin" : ""} />
+                </button>
+              </div>
+
+              <div class="w-px h-4 bg-slate-200 mx-1"></div>
+
+              <div 
+                onClick={() => store.navigate(store.state.activeTabId!, "/")}
+                class="flex items-center gap-1 text-slate-500 hover:bg-slate-100 px-1.5 py-1 rounded cursor-pointer transition-colors ml-1"
+              >
                 <Monitor size={14} />
                 <span>This PC</span>
               </div>
-              <ChevronRight size={14} class="text-slate-300" />
-              <div class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-700 truncate">
-                {activeTab()?.currentPath}
-              </div>
+              
+              <For each={activeTab()?.currentPath.split("/").filter(p => p !== "")}>
+                {(segment, index) => {
+                  const pathUntilNow = () => "/" + activeTab()?.currentPath.split("/").filter(p => p !== "").slice(0, index() + 1).join("/");
+                  return (
+                    <div class="flex items-center gap-1">
+                      <ChevronRight size={14} class="text-slate-300 flex-shrink-0" />
+                      <button 
+                        onClick={() => store.navigate(store.state.activeTabId!, pathUntilNow())}
+                        class="px-1.5 py-1 hover:bg-slate-100 rounded text-slate-700 hover:text-blue-600 transition-colors truncate max-w-[120px]"
+                      >
+                        {segment}
+                      </button>
+                    </div>
+                  );
+                }}
+              </For>
+  
+              <div class="flex-1 min-w-4"></div>
+              
               <Show when={activeTab()?.loading}>
                 <Loader2 size={14} class="animate-spin text-blue-500 mr-2" />
               </Show>
             </div>
-
+            
             {/* Files Grid/List */}
             <div class="flex-1 overflow-y-auto p-4">
               <Show when={activeTab()} fallback={<div class="flex items-center justify-center h-full text-slate-400 font-light">Open a tab to get started</div>}>

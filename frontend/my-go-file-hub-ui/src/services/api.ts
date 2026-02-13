@@ -1,4 +1,4 @@
-import type { FileInfo, StorageSource, AuthResponse, FileNode } from "../types";
+import type { FileInfo, StorageSource, AuthResponse, FileNode, User } from "../types";
 import { adaptFileNode } from "../lib/adapter";
 
 const API_BASE = "/@api/v1";
@@ -56,6 +56,52 @@ export const AuthService = {
 };
 
 /**
+ * 后台管理服务
+ */
+export const AdminService = {
+  // 存储源管理
+  async createSource(source: Partial<StorageSource>) {
+    return request(`${API_BASE}/sources`, {
+      method: "POST",
+      body: JSON.stringify(source),
+      headers: { "Content-Type": "application/json" }
+    });
+  },
+  async updateSource(id: number, source: Partial<StorageSource>) {
+    return request(`${API_BASE}/sources/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(source),
+      headers: { "Content-Type": "application/json" }
+    });
+  },
+  async deleteSource(id: number) {
+    return request(`${API_BASE}/sources/${id}`, { method: "DELETE" });
+  },
+
+  // 用户管理
+  async fetchUsers(): Promise<User[]> {
+    return request<User[]>(`${API_BASE}/users`);
+  },
+  async createUser(user: Partial<User>) {
+    return request(`${API_BASE}/users`, {
+      method: "POST",
+      body: JSON.stringify(user),
+      headers: { "Content-Type": "application/json" }
+    });
+  },
+  async updateUser(id: number, user: Partial<User>) {
+    return request(`${API_BASE}/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(user),
+      headers: { "Content-Type": "application/json" }
+    });
+  },
+  async deleteUser(id: number) {
+    return request(`${API_BASE}/users/${id}`, { method: "DELETE" });
+  }
+};
+
+/**
  * 真实 API 调用
  */
 export const FileService = {
@@ -81,8 +127,12 @@ export const FileService = {
     }
 
     const url = `/${cleanPath.replace(/^\/+/, "")}`;
-    const data = await request<FileInfo[]>(url);
-    return (Array.isArray(data) ? data : []).map(f => adaptFileNode(f, cleanPath));
+    const responseData = await request<any>(url);
+    
+    // 兼容处理：responseData 可能是 { files: [...] } 或直接是数组
+    const files = Array.isArray(responseData) ? responseData : (responseData?.files || []);
+    
+    return (Array.isArray(files) ? files : []).map(f => adaptFileNode(f, cleanPath));
   },
 
   /**

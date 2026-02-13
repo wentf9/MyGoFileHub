@@ -115,6 +115,11 @@ func (s *FileService) GetAllSource(ctx context.Context) ([]vfs.FileInfo, error) 
 	return infos, nil
 }
 
+// ClearDriverCache 从内存中移除驱动缓存，强制下次访问时重新初始化
+func (s *FileService) ClearDriverCache(sourceKey string) {
+	dirverCache.Delete(sourceKey)
+}
+
 func (s *FileService) GetDriver(ctx context.Context, sourceKey string) (vfs.StorageDriver, error) {
 	// 1. 先从缓存获取
 	dirver, ok := dirverCache.Load(sourceKey)

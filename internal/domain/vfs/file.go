@@ -19,10 +19,10 @@ type File interface {
 
 // FileInfo 是系统内部通用的文件元数据模型，屏蔽底层差异
 type FileInfo struct {
-	Name    string
-	Size    int64
-	IsDir   bool
-	ModTime time.Time
+	Name    string    `json:"name"`
+	Size    int64     `json:"size"`
+	IsDir   bool      `json:"is_dir"`
+	ModTime time.Time `json:"mod_time"`
 	// 可以扩展 MIME type, ETag 等
 }
 

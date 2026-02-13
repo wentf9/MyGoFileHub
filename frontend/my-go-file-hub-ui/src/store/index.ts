@@ -12,12 +12,18 @@ const initialState: AppState = {
   drives: [],
   user: null,
   isAuthenticated: !!localStorage.getItem("token"),
+  isSettingsOpen: false,
 };
 
 const [state, setState] = createStore<AppState>(initialState);
 
 export const store = {
   state,
+
+  // UI Actions
+  toggleSettings: (open?: boolean) => {
+    setState("isSettingsOpen", (prev) => open ?? !prev);
+  },
 
   // Auth Actions
   login: async (username: string, password: string) => {

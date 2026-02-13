@@ -19,7 +19,8 @@ export interface StorageSource {
   id: number;
   key: string;          // 唯一标识符，也是根路径
   name: string;
-  type: string;
+  type: string;         // "local", "smb" 等
+  config?: any;         // 存储源的具体配置 (JSON)
   updatedAt: string;
 }
 
@@ -42,6 +43,7 @@ export interface User {
   id: number;
   username: string;
   role: string;
+  password?: string;    // 仅用于创建/更新
 }
 
 export interface AuthResponse {
@@ -57,4 +59,5 @@ export interface AppState {
   drives: StorageSource[];
   user: User | null;
   isAuthenticated: boolean;
+  isSettingsOpen: boolean; // 是否打开设置页面
 }
