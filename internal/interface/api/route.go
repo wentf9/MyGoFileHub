@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/wentf9/MyGoFileHub/config"
 	"github.com/wentf9/MyGoFileHub/internal/application"
 	"github.com/wentf9/MyGoFileHub/internal/interface/api/handlers"
 	"github.com/wentf9/MyGoFileHub/internal/interface/api/middleware"
@@ -103,6 +104,28 @@ func InitRouter(fileService *application.FileService, authService *application.A
 			webdav.Handle(method, "/:source_key", webDAVHandler.Handler)
 		}
 	}
+	ips, subnets, err := config.ParseIPOrSubnet(config.AppConfig.WhiteListStr)
+	if err != nil {
+		// 如果解析失败，采取最安全的策略：不信任任何代理，或者记录日志
 
+		r.SetTrustedProxies(nil)
+		return r
+	}
+
+	// 2. 构造合法的字符串切片
+	var trustedList []string
+	for _, ip := range ips {
+		trustedList = append(trustedList, ip.String())
+	}
+	for _, sn := range subnets {
+		trustedList = append(trustedList, sn.String())
+	}
+
+	// 3. 传递给 Gin
+	if len(trustedList) > 0 {
+		r.SetTrustedProxies(trustedList)
+	} else {
+		r.SetTrustedProxies(nil)
+	}
 	return r
 }

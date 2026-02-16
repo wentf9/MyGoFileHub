@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -10,24 +9,50 @@ import (
 	"github.com/wentf9/MyGoFileHub/config"
 )
 
-var localSubnets []net.Addr
-
 func ClientCheck() gin.HandlerFunc {
+	// 如果白名单配置为 "*"，则允许所有 IP 访问，无需进一步检查
+	if config.AppConfig.WhiteListStr == "*" {
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+	// 预解析白名单，避免每次请求都重新解析，提高性能
+	allowedIPs := make(map[string]bool)
+	allowedSubnets := []*net.IPNet{}
+
+	ip, subnets, _ := config.ParseIPOrSubnet(config.AppConfig.WhiteListStr)
+	for _, ip := range ip {
+		allowedIPs[ip.String()] = true
+	}
+	allowedSubnets = append(allowedSubnets, subnets...)
+
 	return func(c *gin.Context) {
-		if config.AppConfig.LanOnly == "false" {
+		// 1. 获取客户端真实 IP
+		// 注意：在镜像模式/代理环境下，ClientIP() 会处理 X-Forwarded-For
+		clientIPStr := getClientIp(c)
+		clientIP := net.ParseIP(clientIPStr)
+
+		// 2. 校验是否在单一 IP 白名单中
+		if allowedIPs[clientIPStr] {
 			c.Next()
 			return
 		}
-		clientIp := getClientIp(c)
 
-		if ok, err := isSameSubnet(clientIp); err != nil || !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: unable to determine client IP"})
-			c.Abort()
-			return
+		// 3. 校验是否在子网白名单中
+		for _, subnet := range allowedSubnets {
+			if subnet.Contains(clientIP) {
+				c.Next()
+				return
+			}
 		}
-		// 继续处理请求
-		c.Next()
+
+		// 4. 校验不通过，拦截请求
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "Access denied: your IP is not in the allowlist",
+			"ip":    clientIPStr,
+		})
 	}
+
 }
 
 func getClientIp(c *gin.Context) string {
@@ -43,53 +68,4 @@ func getClientIp(c *gin.Context) string {
 		return strings.TrimSpace(xRealIP)
 	}
 	return c.ClientIP()
-}
-
-// 判断 targetIP 是否与本机在同一个子网
-func isSameSubnet(targetIPStr string) (bool, error) {
-	targetIP := net.ParseIP(targetIPStr)
-	if targetIP == nil {
-		return false, fmt.Errorf("invalid target IP: %s", targetIPStr)
-	}
-	for _, addr := range localSubnets {
-		switch v := addr.(type) {
-		case *net.IPNet:
-			// 只处理 IPv4
-			localIP := v.IP.To4()
-			if localIP == nil {
-				continue // 不是 IPv4
-			}
-
-			// 检查目标 IP 是否属于当前接口的子网
-			if v.Contains(targetIP) {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
-}
-
-func init() {
-	// 获取所有网络接口
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		panic("获取本机网络接口失败!")
-	}
-
-	for _, iface := range interfaces {
-		// 跳过非活动或回环接口
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			localSubnets = append(localSubnets, addr)
-		}
-	}
 }

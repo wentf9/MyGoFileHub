@@ -73,8 +73,8 @@ func main() {
 	r := api.InitRouter(fileService, authService, userService, sourceService)
 
 	// 6. 启动
-	fmt.Printf("Server starting on :%s...", config.AppConfig.ServerPort)
-	if err := r.Run(":" + config.AppConfig.ServerPort); err != nil {
+	fmt.Printf("Server starting on %s:%s...", config.AppConfig.Listen, config.AppConfig.ServerPort)
+	if err := r.Run(config.AppConfig.Listen + ":" + config.AppConfig.ServerPort); err != nil {
 		panic(err)
 	}
 }
