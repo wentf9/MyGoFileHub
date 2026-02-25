@@ -4,6 +4,9 @@ import { Plus, X, Folder, HardDrive, Settings, Monitor, ChevronRight, File, Imag
 import { type FileNode } from "./types";
 import Login from "./components/Login";
 import SettingsModal from "./components/Settings/SettingsModal";
+import ContextMenu from "./components/ContextMenu";
+import RenameModal from "./components/RenameModal";
+import DeleteModal from "./components/DeleteModal";
 
 const FileIcon: Component<{ file: FileNode }> = (props) => {
   switch (props.file.mimeType) {
@@ -51,6 +54,9 @@ const App: Component = () => {
       <div class="flex flex-col h-screen w-full bg-slate-50 text-slate-900 select-none">
         {/* Settings Modal */}
         <SettingsModal />
+        <ContextMenu />
+        <RenameModal />
+        <DeleteModal />
 
         {/* TopBar */}
         <header class="h-10 flex items-center px-4 bg-white border-b border-slate-200 gap-4">
@@ -59,20 +65,20 @@ const App: Component = () => {
             <span>MyGoFileHub</span>
           </div>
           <div class="flex-1"></div>
-          
+
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 px-2 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
               <UserIcon size={14} />
               <span>{store.state.user?.username || "Admin"}</span>
             </div>
-            <button 
+            <button
               onClick={() => store.logout()}
               class="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-500 transition-colors"
               title="Logout"
             >
               <LogOut size={18} />
             </button>
-            <button 
+            <button
               onClick={() => store.toggleSettings(true)}
               class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
               title="System Settings"
@@ -105,7 +111,7 @@ const App: Component = () => {
               >
                 <Folder size={14} class="text-yellow-500 flex-shrink-0" />
                 <span class="truncate flex-1">{tab.title}</span>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); store.closeTab(tab.id); }}
                   class="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-slate-300 rounded-sm transition-opacity"
                 >
@@ -114,7 +120,7 @@ const App: Component = () => {
               </div>
             )}
           </For>
-          <button 
+          <button
             onClick={() => store.addTab("/", "New Tab")}
             class="p-1.5 text-slate-500 hover:bg-slate-200 rounded-md ml-1"
           >
@@ -129,19 +135,19 @@ const App: Component = () => {
             <div class="p-2">
               <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">Quick Access</div>
               <nav class="space-y-0.5">
-                <div 
+                <div
                   onClick={() => store.addTab("/", "This PC")}
                   class="flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-slate-100 text-slate-700 rounded-md cursor-default"
                 >
                   <Monitor size={14} /> This PC
                 </div>
               </nav>
-              
+
               <div class="text-[10px] font-bold text-slate-400 px-2 py-1 mt-4 uppercase tracking-wider">Storage Sources</div>
               <nav class="space-y-0.5">
                 <For each={store.state.drives}>
                   {(drive) => (
-                    <div 
+                    <div
                       onClick={() => store.addTab(drive.key, drive.name)}
                       class="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-md cursor-default"
                     >
@@ -158,7 +164,7 @@ const App: Component = () => {
             {/* Breadcrumbs / Address Bar */}
             <div class="h-9 flex items-center px-2 bg-white border-b border-slate-100 text-xs gap-1">
               <div class="flex items-center gap-0.5 mr-1">
-                <button 
+                <button
                   onClick={handleUp}
                   disabled={activeTab()?.currentPath === "/"}
                   class="p-1 hover:bg-slate-100 rounded disabled:opacity-30 transition-colors text-slate-600"
@@ -166,7 +172,7 @@ const App: Component = () => {
                 >
                   <ArrowUp size={14} />
                 </button>
-                <button 
+                <button
                   onClick={handleRefresh}
                   class="p-1 hover:bg-slate-100 rounded transition-colors text-slate-600"
                   title="Refresh"
@@ -177,21 +183,21 @@ const App: Component = () => {
 
               <div class="w-px h-4 bg-slate-200 mx-1"></div>
 
-              <div 
+              <div
                 onClick={() => store.navigate(store.state.activeTabId!, "/")}
                 class="flex items-center gap-1 text-slate-500 hover:bg-slate-100 px-1.5 py-1 rounded cursor-pointer transition-colors ml-1"
               >
                 <Monitor size={14} />
                 <span>This PC</span>
               </div>
-              
+
               <For each={activeTab()?.currentPath.split("/").filter(p => p !== "")}>
                 {(segment, index) => {
                   const pathUntilNow = () => "/" + activeTab()?.currentPath.split("/").filter(p => p !== "").slice(0, index() + 1).join("/");
                   return (
                     <div class="flex items-center gap-1">
                       <ChevronRight size={14} class="text-slate-300 flex-shrink-0" />
-                      <button 
+                      <button
                         onClick={() => store.navigate(store.state.activeTabId!, pathUntilNow())}
                         class="px-1.5 py-1 hover:bg-slate-100 rounded text-slate-700 hover:text-blue-600 transition-colors truncate max-w-[120px]"
                       >
@@ -201,22 +207,27 @@ const App: Component = () => {
                   );
                 }}
               </For>
-  
+
               <div class="flex-1 min-w-4"></div>
-              
+
               <Show when={activeTab()?.loading}>
                 <Loader2 size={14} class="animate-spin text-blue-500 mr-2" />
               </Show>
             </div>
-            
+
             {/* Files Grid/List */}
             <div class="flex-1 overflow-y-auto p-4">
               <Show when={activeTab()} fallback={<div class="flex items-center justify-center h-full text-slate-400 font-light">Open a tab to get started</div>}>
                 <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                   <For each={activeTab()?.files}>
                     {(file) => (
-                      <div 
+                      <div
                         onDblClick={() => file.isDir && store.navigate(store.state.activeTabId!, file.fullPath)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          store.openContextMenu(e.clientX, e.clientY, file);
+                        }}
                         class="flex flex-col items-center gap-1 p-2 hover:bg-blue-50 rounded group cursor-default border border-transparent hover:border-blue-100 transition-colors"
                       >
                         <div class="w-16 h-16 flex items-center justify-center group-hover:bg-blue-100/50 rounded transition-colors">

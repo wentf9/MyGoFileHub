@@ -13,6 +13,9 @@ const initialState: AppState = {
   user: null,
   isAuthenticated: !!localStorage.getItem("token"),
   isSettingsOpen: false,
+  contextMenu: { isOpen: false, x: 0, y: 0, file: null },
+  renameModal: { isOpen: false, file: null },
+  deleteModal: { isOpen: false, file: null },
 };
 
 const [state, setState] = createStore<AppState>(initialState);
@@ -30,9 +33,9 @@ export const store = {
     try {
       const res = await AuthService.login(username, password);
       localStorage.setItem("token", res.token);
-      setState({ 
-        isAuthenticated: true, 
-        user: { id: 0, username, role: "user" } 
+      setState({
+        isAuthenticated: true,
+        user: { id: 0, username, role: "user" }
       });
       return true;
     } catch (err) {
@@ -45,7 +48,7 @@ export const store = {
     localStorage.removeItem("token");
     setState({ isAuthenticated: false, user: null, tabs: [], activeTabId: null, drives: [] });
   },
-  
+
   // 初始化加载存储源
   loadDrives: async () => {
     if (!state.isAuthenticated) return;
@@ -84,7 +87,7 @@ export const store = {
     if (tabIndex === -1) return;
 
     setState("tabs", (tabs) => tabs.filter((t) => t.id !== id));
-    
+
     if (state.activeTabId === id) {
       if (state.tabs.length > 0) {
         const nextActiveTab = state.tabs[Math.max(0, tabIndex - 1)];
@@ -111,11 +114,11 @@ export const store = {
 
     try {
       const files = await FileService.fetchFiles(path);
-      
+
       setState("tabs", t => t.id === tabId, (t) => {
         const newStack = t.historyStack.slice(0, t.historyIndex + 1);
         newStack.push(path);
-        
+
         return {
           files,
           loading: false,
@@ -137,5 +140,33 @@ export const store = {
 
   clearClipboard: () => {
     setState("clipboard", { items: [], action: null });
+  },
+
+  // Context Menu Actions
+  openContextMenu: (x: number, y: number, file: FileNode | null) => {
+    setState("contextMenu", { isOpen: true, x, y, file });
+  },
+
+  closeContextMenu: () => {
+    setState("contextMenu", "isOpen", false);
+  },
+
+  // Modal Actions
+  openRenameModal: (file: FileNode) => {
+    setState("renameModal", { isOpen: true, file });
+    store.closeContextMenu();
+  },
+
+  closeRenameModal: () => {
+    setState("renameModal", { isOpen: false, file: null });
+  },
+
+  openDeleteModal: (file: FileNode) => {
+    setState("deleteModal", { isOpen: true, file });
+    store.closeContextMenu();
+  },
+
+  closeDeleteModal: () => {
+    setState("deleteModal", { isOpen: false, file: null });
   },
 };

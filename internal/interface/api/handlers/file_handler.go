@@ -163,7 +163,16 @@ func (h *FileHandler) PutHandler(c *gin.Context) {
 		return
 	}
 
-	err := h.service.Rename(c.Request.Context(), sourceKey, path, req.NewPath)
+	// 规范化 NewPath: 去除前端可能带来的 /source_key 前缀
+	newPath := req.NewPath
+	prefix := "/" + sourceKey + "/"
+	if after, ok := strings.CutPrefix(newPath, prefix); ok {
+		newPath = "/" + after
+	} else if newPath == "/"+sourceKey {
+		newPath = "/"
+	}
+
+	err := h.service.Rename(c.Request.Context(), sourceKey, path, newPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

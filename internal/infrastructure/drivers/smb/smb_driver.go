@@ -81,12 +81,24 @@ func (d *SMBDriver) DriverName() string {
 
 // Init 初始化 SMB 连接
 // Config 需求: host, port(可选,默认445), user, password, share_name
-func (d *SMBDriver) Init(ctx context.Context, config map[string]interface{}) error {
+func (d *SMBDriver) Init(ctx context.Context, config map[string]any) error {
 	host, _ := config["host"].(string)
-	port, _ := config["port"].(string)
+
+	var port string
+	switch p := config["port"].(type) {
+	case string:
+		port = p
+	case float64:
+		port = fmt.Sprintf("%.0f", p)
+	case int:
+		port = fmt.Sprintf("%d", p)
+	}
+
 	user, _ := config["user"].(string)
 	password, _ := config["password"].(string)
 	shareName, _ := config["share_name"].(string)
+
+	shareName = strings.TrimLeft(shareName, "/\\")
 
 	if host == "" || user == "" || shareName == "" {
 		return fmt.Errorf("smb config missing: host, user, or share_name")

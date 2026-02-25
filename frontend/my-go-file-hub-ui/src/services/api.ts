@@ -159,5 +159,25 @@ export const FileService = {
   async deleteFile(path: string) {
     const url = `/${path.replace(/^\/+/, "")}`;
     return request(url, { method: "DELETE" });
+  },
+
+  /**
+   * 重命名文件或移动
+   */
+  async renameFile(sourcePath: string, newPath: string) {
+    const url = `/${sourcePath.replace(/^\/+/, "")}`;
+    return request(url, {
+      method: "PUT",
+      body: JSON.stringify({ new_path: newPath }),
+      headers: { "Content-Type": "application/json" }
+    });
+  },
+
+  /**
+   * 新建文件夹
+   */
+  async createFolder(path: string) {
+    const url = `/${path.replace(/^\/+/, "")}?type=dir`;
+    return request(url, { method: "POST" });
   }
 };

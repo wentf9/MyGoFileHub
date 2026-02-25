@@ -75,4 +75,22 @@ export interface AppState {
   user: User | null;
   isAuthenticated: boolean;
   isSettingsOpen: boolean; // 是否打开设置页面
+
+  // Context Menu State
+  contextMenu: {
+    isOpen: boolean;
+    x: number;
+    y: number;
+    file: FileNode | null;
+  };
+
+  // Modal States
+  renameModal: {
+    isOpen: boolean;
+    file: FileNode | null;
+  };
+  deleteModal: {
+    isOpen: boolean;
+    file: FileNode | null;
+  };
 }
