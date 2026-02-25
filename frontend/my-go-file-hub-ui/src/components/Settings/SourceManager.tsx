@@ -1,31 +1,57 @@
-import { type Component, createResource, createSignal, For, Show } from "solid-js";
+import { type Component, createResource, createSignal, createEffect, For, Show } from "solid-js";
 import { AdminService, FileService } from "../../services/api";
 import { store } from "../../store";
 import { Plus, Trash2, HardDrive, Edit2 } from "lucide-solid";
-import type { StorageSource } from "../../types";
+import type { StorageSource, StorageDriverSchema } from "../../types";
 
 const SourceManager: Component = () => {
   const [sources, { refetch }] = createResource(FileService.fetchSources);
+  const [schemas] = createResource(AdminService.fetchSourceSchemas);
+
   const [isAdding, setIsAdding] = createSignal(false);
   const [editingId, setEditingId] = createSignal<number | null>(null);
   const [loading, setLoading] = createSignal(false);
+
+  const activeSchema = () => {
+    if (!schemas()) return null;
+    return schemas()?.find((s: StorageDriverSchema) => s.type === sourceForm().type) || null;
+  };
 
   // Form State
   const [sourceForm, setSourceForm] = createSignal<Partial<StorageSource>>({
     key: "",
     name: "",
     type: "local",
-    config: { root_path: "" }
+    config: {}
+  });
+
+  // 当选择的驱动类型改变时，或者编辑状态重置时，如果缺少字段则注入默认值
+  createEffect(() => {
+    const schema = activeSchema();
+    if (schema) {
+      const currentConfig = Object.assign({}, sourceForm().config) || {};
+      let changed = false;
+      schema.config.forEach(item => {
+        if (currentConfig[item.name] === undefined && item.default !== undefined) {
+          currentConfig[item.name] = item.default;
+          changed = true;
+        }
+      });
+      if (changed) {
+        setSourceForm(prev => ({ ...prev, config: currentConfig }));
+      }
+    }
   });
 
   const resetForm = () => {
-    setSourceForm({ key: "", name: "", type: "local", config: { root_path: "" } });
+    setSourceForm({ key: "", name: "", type: "local", config: {} });
     setIsAdding(false);
     setEditingId(null);
   };
 
   const handleEdit = (source: StorageSource) => {
-    setSourceForm({ ...source });
+    // 确保深拷贝 config，防止引用修改
+    setSourceForm({ ...source, config: { ...source.config } });
     setEditingId(source.id);
     setIsAdding(false);
   };
@@ -68,7 +94,7 @@ const SourceManager: Component = () => {
           <h4 class="text-sm font-semibold text-slate-800">Storage Sources</h4>
           <p class="text-xs text-slate-500">Mount external drives or local folders</p>
         </div>
-        <button 
+        <button
           onClick={() => { resetForm(); setIsAdding(true); }}
           class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-blue-100"
         >
@@ -80,15 +106,15 @@ const SourceManager: Component = () => {
       <Show when={isAdding() || editingId() !== null}>
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 animate-in slide-in-from-top-2 duration-200">
           <div class="flex items-center gap-2 mb-4 text-slate-800">
-             <Show when={editingId() !== null} fallback={<Plus size={18} class="text-blue-600" />}>
-                <Edit2 size={18} class="text-blue-600" />
-             </Show>
-             <h5 class="font-bold text-sm">{editingId() !== null ? "Edit Storage Source" : "Add New Source"}</h5>
+            <Show when={editingId() !== null} fallback={<Plus size={18} class="text-blue-600" />}>
+              <Edit2 size={18} class="text-blue-600" />
+            </Show>
+            <h5 class="font-bold text-sm">{editingId() !== null ? "Edit Storage Source" : "Add New Source"}</h5>
           </div>
           <form onSubmit={handleSubmit} class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Unique Key</label>
-              <input 
+              <input
                 required
                 value={sourceForm().key || ""}
                 placeholder="e.g. nas_works"
@@ -99,7 +125,7 @@ const SourceManager: Component = () => {
             </div>
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Display Name</label>
-              <input 
+              <input
                 required
                 value={sourceForm().name || ""}
                 placeholder="e.g. My NAS"
@@ -109,34 +135,69 @@ const SourceManager: Component = () => {
             </div>
             <div class="space-y-1">
               <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Driver Type</label>
-              <select 
-                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none"
+              <select
+                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none disabled:bg-slate-100"
                 value={sourceForm().type || "local"}
-                onChange={(e) => setSourceForm({ ...sourceForm(), type: e.currentTarget.value })}
+                disabled={editingId() !== null} /* 不允许编辑和修改驱动类型 */
+                onChange={(e) => {
+                  // 切换类型时，清空之前类型的配置
+                  setSourceForm({ ...sourceForm(), type: e.currentTarget.value, config: {} });
+                }}
               >
-                <option value="local">Local Folder</option>
-                <option value="smb">SMB / Windows Share</option>
+                <For each={schemas()}>
+                  {(schema) => (
+                    <option value={schema.type}>{schema.name}</option>
+                  )}
+                </For>
               </select>
             </div>
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Root Path</label>
-              <input 
-                required
-                value={sourceForm().config?.root_path || ""}
-                placeholder="e.g. /mnt/nas or C:\Files"
-                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
-                onInput={(e) => setSourceForm({ ...sourceForm(), config: { ...sourceForm().config, root_path: e.currentTarget.value } })}
-              />
-            </div>
+
+            {/* Dynamic Configuration Fields */}
+            <Show when={activeSchema()}>
+              <div class="col-span-2 grid grid-cols-2 gap-4 mt-2 p-4 bg-white border border-slate-100 rounded-lg shadow-sm">
+                <div class="col-span-2">
+                  <h6 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">Driver Configuration</h6>
+                </div>
+                <For each={activeSchema()?.config}>
+                  {(field) => {
+                    const value = () => sourceForm().config?.[field.name] ?? field.default ?? "";
+
+                    return (
+                      <div class="space-y-1" classList={{ "col-span-2": field.type === "string" && field.name === "root_path" }}>
+                        <label class="text-[10px] font-bold text-slate-600 uppercase ml-1 flex justify-between">
+                          <span>{field.label} {field.required && <span class="text-red-500">*</span>}</span>
+                        </label>
+                        <Show when={field.description}>
+                          <p class="text-[10px] text-slate-400 ml-1 mb-1">{field.description}</p>
+                        </Show>
+                        <input
+                          required={field.required}
+                          type={field.type === "password" ? "password" : field.type === "number" ? "number" : "text"}
+                          value={value()}
+                          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors"
+                          onInput={(e) => {
+                            let val: string | number = e.currentTarget.value;
+                            if (field.type === "number") {
+                              val = val === "" ? "" : Number(val);
+                            }
+                            setSourceForm({ ...sourceForm(), config: { ...sourceForm().config, [field.name]: val } })
+                          }}
+                        />
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+            </Show>
             <div class="col-span-2 flex justify-end gap-2 mt-2">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={resetForm}
                 class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={loading()}
                 class="px-6 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-100"
@@ -188,14 +249,14 @@ const SourceManager: Component = () => {
                   </td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
+                      <button
                         onClick={() => handleEdit(source)}
                         class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
                         title="Edit Source"
                       >
                         <Edit2 size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDelete(source.id)}
                         class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                         title="Delete Source"

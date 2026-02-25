@@ -1,4 +1,4 @@
-import type { FileInfo, StorageSource, AuthResponse, FileNode, User } from "../types";
+import type { StorageSource, StorageDriverSchema, AuthResponse, FileNode, User } from "../types";
 import { adaptFileNode } from "../lib/adapter";
 
 const API_BASE = "/@api/v1";
@@ -15,11 +15,11 @@ interface ApiResponse<T> {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("token");
   const headers = new Headers(options.headers);
-  
+
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  
+
   headers.set("X-Client-Id", "web-browser");
 
   const response = await fetch(path, { ...options, headers });
@@ -33,7 +33,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   const json = await response.json();
-  
+
   // 适配后端统一响应格式：解包 data
   if (json && typeof json === 'object' && 'code' in json && 'data' in json) {
     return (json as ApiResponse<T>).data;
@@ -77,6 +77,9 @@ export const AdminService = {
   async deleteSource(id: number) {
     return request(`${API_BASE}/sources/${id}`, { method: "DELETE" });
   },
+  async fetchSourceSchemas(): Promise<StorageDriverSchema[]> {
+    return request<StorageDriverSchema[]>(`${API_BASE}/sources/schema`);
+  },
 
   // 用户管理
   async fetchUsers(): Promise<User[]> {
@@ -111,7 +114,7 @@ export const FileService = {
    */
   async fetchFiles(path: string) {
     const cleanPath = path.replace(/\/+$/, "") || "/";
-    
+
     if (cleanPath === "/") {
       const sources = await this.fetchSources();
       return (Array.isArray(sources) ? sources : []).map(s => ({
@@ -128,10 +131,10 @@ export const FileService = {
 
     const url = `/${cleanPath.replace(/^\/+/, "")}`;
     const responseData = await request<any>(url);
-    
+
     // 兼容处理：responseData 可能是 { files: [...] } 或直接是数组
     const files = Array.isArray(responseData) ? responseData : (responseData?.files || []);
-    
+
     return (Array.isArray(files) ? files : []).map(f => adaptFileNode(f, cleanPath));
   },
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/wentf9/MyGoFileHub/internal/domain/model"
 	"github.com/wentf9/MyGoFileHub/internal/domain/vfs"
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers"
 
@@ -15,7 +16,53 @@ import (
 )
 
 func init() {
-	drivers.Register("smb", NewSMBDriver)
+	schema := model.StorageDriverSchema{
+		Type: "smb",
+		Name: "SMB / Windows Share",
+		Config: []model.ConfigItem{
+			{
+				Name:        "host",
+				Label:       "Host Address",
+				Type:        "string",
+				Required:    true,
+				Description: "IP or hostname of the SMB server (e.g. 192.168.1.100)",
+				Default:     "",
+			},
+			{
+				Name:        "port",
+				Label:       "Port",
+				Type:        "number",
+				Required:    false,
+				Description: "SMB port (default: 445)",
+				Default:     "445",
+			},
+			{
+				Name:        "user",
+				Label:       "Username",
+				Type:        "string",
+				Required:    true,
+				Description: "Username for authentication",
+				Default:     "",
+			},
+			{
+				Name:        "password",
+				Label:       "Password",
+				Type:        "password",
+				Required:    true,
+				Description: "Password for authentication",
+				Default:     "",
+			},
+			{
+				Name:        "share_name",
+				Label:       "Share Name",
+				Type:        "string",
+				Required:    true,
+				Description: "Name of the shared folder",
+				Default:     "",
+			},
+		},
+	}
+	drivers.Register("smb", NewSMBDriver, schema)
 }
 
 type SMBDriver struct {

@@ -99,7 +99,34 @@
 - **方法**: `GET`
 - **URL**: `/@api/v1/sources`
 
-### 4.2 创建存储源
+### 4.2 获取所有存储驱动配置结构 (Schemas)
+- **方法**: `GET`
+- **URL**: `/@api/v1/sources/schema`
+- **Response**:
+  ```json
+  {
+      "code": 0,
+      "data": [
+          {
+              "type": "local",
+              "name": "Local Folder",
+              "config": [
+                  {
+                      "name": "root_path",
+                      "label": "Root Path",
+                      "type": "string",
+                      "required": true,
+                      "description": "...",
+                      "default": ""
+                  }
+              ]
+          }
+      ],
+      "msg": "success"
+  }
+  ```
+
+### 4.3 创建存储源
 - **方法**: `POST`
 - **URL**: `/@api/v1/sources`
 - **Request Body**:

@@ -6,6 +6,7 @@ import (
 
 	"github.com/wentf9/MyGoFileHub/internal/application"
 	"github.com/wentf9/MyGoFileHub/internal/domain/model"
+	"github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,6 +26,11 @@ func (h *SourceHandler) List(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "success", "data": sources})
+}
+
+func (h *SourceHandler) GetSchema(c *gin.Context) {
+	schemas := drivers.GetRegisteredSchemas()
+	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "success", "data": schemas})
 }
 
 func (h *SourceHandler) Get(c *gin.Context) {

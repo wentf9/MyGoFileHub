@@ -68,6 +68,7 @@ func InitRouter(fileService *application.FileService, authService *application.A
 		sources := v1.Group("/sources")
 		sources.Use(middleware.ClientCheck(), middleware.JWTAuth(), middleware.AdminOnly())
 		{
+			sources.GET("/schema", sourceHandler.GetSchema)
 			sources.GET("/", sourceHandler.List)
 			sources.GET("/:id", sourceHandler.Get)
 			sources.POST("/", sourceHandler.Create)

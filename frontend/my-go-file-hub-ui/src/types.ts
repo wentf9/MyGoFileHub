@@ -24,6 +24,21 @@ export interface StorageSource {
   updatedAt: string;
 }
 
+export interface ConfigItem {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  description: string;
+  default: any;
+}
+
+export interface StorageDriverSchema {
+  type: string;
+  name: string;
+  config: ConfigItem[];
+}
+
 export interface TabSession {
   id: string;
   title: string;

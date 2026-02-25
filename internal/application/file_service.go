@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
+	"github.com/wentf9/MyGoFileHub/config"
 	"github.com/wentf9/MyGoFileHub/internal/domain/repository"
 	"github.com/wentf9/MyGoFileHub/internal/domain/vfs"
+	"github.com/wentf9/MyGoFileHub/internal/infrastructure/crypto"
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers"
 )
 
@@ -167,9 +170,44 @@ func (s *FileService) GetDriver(ctx context.Context, sourceKey string) (vfs.Stor
 		return s.permService.CheckPermission(c, username.(string), source.ID, path, action), nil
 	}
 	secureDriver := vfs.NewSecureDriver(driver, checker)
-	// 6. 初始化驱动 (传入从数据库取出的 Config JSONMap)
-	// source.Config 本身就是 map[string]interface{}，可以直接传
-	if err := secureDriver.Init(ctx, source.Config); err != nil {
+	// 6. 准备配置并解密敏感字段
+	// 深拷贝 Config，避免修改缓存或者数据库对象
+	decryptedConfig := make(map[string]any)
+	for k, v := range source.Config {
+		decryptedConfig[k] = v
+	}
+
+	// 找出该驱动需要哪些敏感字段
+	var sensitiveFields []string
+	schemas := drivers.GetRegisteredSchemas()
+	for _, schema := range schemas {
+		if schema.Type == source.Type {
+			for _, item := range schema.Config {
+				if item.Type == "password" {
+					sensitiveFields = append(sensitiveFields, item.Name)
+				}
+			}
+			break
+		}
+	}
+
+	// 进行解密
+	for _, field := range sensitiveFields {
+		if val, ok := decryptedConfig[field]; ok {
+			strVal, isStr := val.(string)
+			if isStr && strings.HasPrefix(strVal, "ENC:") {
+				cipherText := strings.TrimPrefix(strVal, "ENC:")
+				plainText, err := crypto.Decrypt(cipherText, config.AppConfig.SecretKey)
+				if err != nil {
+					return nil, fmt.Errorf("failed to decrypt sensitive field %s: %v", field, err)
+				}
+				decryptedConfig[field] = plainText
+			}
+		}
+	}
+
+	// 7. 初始化驱动 (传入解密后的 Config map)
+	if err := secureDriver.Init(ctx, decryptedConfig); err != nil {
 		return nil, fmt.Errorf("failed to init driver: %v", err)
 	}
 	dirverCache.Store(sourceKey, secureDriver)

@@ -10,6 +10,7 @@ import (
 	"github.com/wentf9/MyGoFileHub/internal/application"
 	"github.com/wentf9/MyGoFileHub/internal/domain/model"
 	_ "github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers/local"
+	_ "github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers/smb"
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/persistence"
 	"github.com/wentf9/MyGoFileHub/internal/interface/api"
 )

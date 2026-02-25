@@ -4,3 +4,5 @@ interface.md
 data/gofile.db
 frontend/my-go-file-hub-ui/pnpm-lock.yaml
 frontend/my-go-file-hub-ui/pnpm-workspace.yaml
+data/.secret_key
+AGENT_INSTRUCTIONS.md

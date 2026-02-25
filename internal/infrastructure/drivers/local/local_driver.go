@@ -9,13 +9,28 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/wentf9/MyGoFileHub/internal/domain/model"
 	"github.com/wentf9/MyGoFileHub/internal/domain/vfs"
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/drivers"
 )
 
 // init 注册驱动到工厂
 func init() {
-	drivers.Register("local", NewLocalDriver)
+	schema := model.StorageDriverSchema{
+		Type: "local",
+		Name: "Local Folder",
+		Config: []model.ConfigItem{
+			{
+				Name:        "root_path",
+				Label:       "Root Path",
+				Type:        "string",
+				Required:    true,
+				Description: "Absolute path to the local directory (e.g. /mnt/data or C:\\Files)",
+				Default:     "",
+			},
+		},
+	}
+	drivers.Register("local", NewLocalDriver, schema)
 }
 
 // LocalDriver 本地文件系统实现
