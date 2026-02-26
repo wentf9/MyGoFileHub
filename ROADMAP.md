@@ -25,11 +25,8 @@
 - [x] 创建 CLAUDE.md 项目配置文件
 - [x] 创建 scripts 目录下的运行脚本（Bash + PowerShell 双版本）
 - [x] #001 - 添加版本号信息注入 (Version Info Injection)
+- [x] #002 - 单文件分发支持 (Single Binary Distribution)
 
 ### 进行中 🔄
 
 ### 计划中 📋
-
-- [ ] #002 - 单文件分发支持 (Single Binary Distribution)
-  - 文件：`tasks/002-single-binary-distribution.md`
-  - 描述：使用 go:embed 嵌入前端静态文件，实现单二进制文件分发，支持开发/生产模式切换
