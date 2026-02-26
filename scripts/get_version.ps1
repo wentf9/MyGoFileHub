@@ -12,7 +12,13 @@ try {
 }
 
 # 获取构建时间 (RFC3339 格式，UTC 时间)
-$BUILD_TIME = (Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
+# 兼容 Windows PowerShell 5.1 和 PowerShell 7+
+try {
+    $BUILD_TIME = (Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
+} catch {
+    # Fallback for Windows PowerShell 5.1
+    $BUILD_TIME = ([TimeZoneInfo]::ConvertTimeToUtc((Get-Date))).ToString("yyyy-MM-ddTHH:mm:ssZ")
+}
 
 # 获取当前 tag 作为版本号 (如果没有 tag 则使用 dev 版本)
 try {

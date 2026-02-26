@@ -62,7 +62,11 @@ try {
     Write-Host "Warning: Failed to get version info, using defaults" -ForegroundColor Yellow
     $VERSION = "v0.1.0-dev"
     $GIT_COMMIT = "unknown"
-    $BUILD_TIME = (Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
+    try {
+        $BUILD_TIME = (Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
+    } catch {
+        $BUILD_TIME = ([TimeZoneInfo]::ConvertTimeToUtc((Get-Date))).ToString("yyyy-MM-ddTHH:mm:ssZ")
+    }
 }
 
 Write-Host "  Version: $VERSION"
