@@ -9,3 +9,5 @@ AGENT_INSTRUCTIONS.md
 bin/MyGoFileHub
 .claude/settings.local.json
 frontend/dist/
+bin/MyGoFileHub.exe
+bin/MyGoFileHub~
