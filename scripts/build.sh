@@ -28,6 +28,11 @@ echo "----------------------------------------"
 mkdir -p "$ROOT_DIR/logs"
 mkdir -p "$ROOT_DIR/data"
 
+# Copy frontend dist to embed directory
+echo "Copying frontend dist to embed directory..."
+rm -rf "$ROOT_DIR/frontend/dist"
+cp -r "$ROOT_DIR/frontend/my-go-file-hub-ui/dist" "$ROOT_DIR/frontend/dist"
+
 # Get version info
 echo "Getting version info..."
 if command -v bash &> /dev/null; then
@@ -50,8 +55,8 @@ LDFLAGS="$LDFLAGS -X 'github.com/wentf9/MyGoFileHub/internal/application.gitComm
 LDFLAGS="$LDFLAGS -X 'github.com/wentf9/MyGoFileHub/internal/application.buildTime=$BUILD_TIME'"
 
 # Build backend binary
-echo "Compiling Go binary with ldflags..."
-CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o "$ROOT_DIR/bin/MyGoFileHub" main.go
+echo "Compiling Go binary with ldflags (CGO enabled for SQLite)..."
+CGO_ENABLED=1 go build -ldflags "$LDFLAGS" -o "$ROOT_DIR/bin/MyGoFileHub" main.go
 
 echo ""
 echo "========================================"

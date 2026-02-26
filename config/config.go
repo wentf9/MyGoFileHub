@@ -19,7 +19,9 @@ type Config struct {
 	Listen          string `env:"MY_GO_FILE_HUB_LISTEN" envDefault:"localhost"`
 	DataDir         string `env:"MY_GO_FILE_HUB_DATA_DIR" envDefault:"./data"`
 	WhiteListStr    string `env:"MY_GO_FILE_HUB_WHITE_LIST" envDefault:"127.0.0.1"`
-	SecretKey       string `env:"MY_GO_FILE_HUB_SECRET_KEY"` // 用于加密存储源配置的密钥，32字节
+	SecretKey       string `env:"MY_GO_FILE_HUB_SECRET_KEY"`                             // 用于加密存储源配置的密钥，32 字节
+	Mode            string `env:"MY_GO_FILE_HUB_MODE" envDefault:"prod"`                 // 运行模式：dev(开发) / prod(生产)
+	FrontendDir     string `env:"MY_GO_FILE_HUB_FRONTEND_DIR" envDefault:"./frontend"`   // 开发模式下前端目录路径
 	WhiteListIP     []net.IP
 	WhiteListSubnet []*net.IPNet
 }
@@ -44,14 +46,14 @@ func ParseIPOrSubnet(input string) ([]net.IP, []*net.IPNet, error) {
 		if strings.Contains(trimmed, "/") {
 			_, ipNet, err := net.ParseCIDR(trimmed)
 			if err != nil {
-				return nil, nil, fmt.Errorf("无效的子网格式: %s", trimmed)
+				return nil, nil, fmt.Errorf("无效的子网格式：%s", trimmed)
 			}
 			subnets = append(subnets, ipNet)
 		} else {
 			// 3. 尝试解析为纯 IP (如 192.168.1.1)
 			ip := net.ParseIP(trimmed)
 			if ip == nil {
-				return nil, nil, fmt.Errorf("无效的 IP 格式: %s", trimmed)
+				return nil, nil, fmt.Errorf("无效的 IP 格式：%s", trimmed)
 			}
 			ips = append(ips, ip)
 		}

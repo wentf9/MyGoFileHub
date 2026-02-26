@@ -29,6 +29,10 @@ MyGoFileHub a9a2d96-dirty
 - 后端成功注入版本信息
 - CGO_ENABLED=0 解决 Windows cgo 编译问题
 
+**版本发布**：
+- Git Commit: `06a645b`
+- Git Tag: `v0.1.0`
+
 ## 概述
 
 为 MyGoFileHub 项目添加完整的版本信息注入机制，在编译时通过 Go 链接器的 `-ldflags` 参数将版本号、Git commit hash、构建时间等信息注入到二进制文件中。这是 Go 社区的最佳实践，可以让发布的二进制文件包含完整的构建元数据。

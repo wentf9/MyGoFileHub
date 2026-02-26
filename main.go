@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/wentf9/MyGoFileHub/config"
 	"github.com/wentf9/MyGoFileHub/internal/application"
 	"github.com/wentf9/MyGoFileHub/internal/domain/model"
@@ -14,6 +17,11 @@ import (
 	"github.com/wentf9/MyGoFileHub/internal/infrastructure/persistence"
 	"github.com/wentf9/MyGoFileHub/internal/interface/api"
 )
+
+// 嵌入前端构建产物 (生产模式)
+// 路径相对于项目根目录
+//go:embed all:frontend/dist
+var embeddedFS embed.FS
 
 func main() {
 	// 检查 --version 或 -v 参数
@@ -78,11 +86,37 @@ func main() {
 		}
 	}
 
-	// 5. 初始化 Router
-	r := api.InitRouter(fileService, authService, userService, sourceService)
+	// 5. 根据运行模式初始化 Router
+	var r *gin.Engine
+	var staticFS fs.FS
+
+	if config.AppConfig.Mode == "dev" {
+		// 开发模式：不嵌入静态文件，仅 API
+		fmt.Println("[INFO] Running in development mode (API only)")
+		fmt.Printf("[INFO] Frontend directory: %s\n", config.AppConfig.FrontendDir)
+		staticFS = nil // nil 表示不服务静态文件
+	} else {
+		// 生产模式：使用嵌入式静态文件
+		fmt.Println("[INFO] Running in production mode (embedded frontend)")
+		// 获取 dist 目录的嵌入文件系统
+		staticFS, _ = fs.Sub(embeddedFS, "frontend/dist")
+	}
+
+	// 初始化路由
+	r = api.InitRouter(fileService, authService, userService, sourceService, staticFS)
 
 	// 6. 启动
-	fmt.Printf("Server starting on %s:%s...", config.AppConfig.Listen, config.AppConfig.ServerPort)
+	fmt.Printf("Server starting on %s:%s\n", config.AppConfig.Listen, config.AppConfig.ServerPort)
+	if config.AppConfig.Mode == "dev" {
+		fmt.Println("\nDevelopment mode:")
+		fmt.Println("  - API:  http://" + config.AppConfig.Listen + ":" + config.AppConfig.ServerPort)
+		fmt.Println("  - Frontend: Run 'npm run dev' in frontend/my-go-file-hub-ui directory")
+	} else {
+		fmt.Println("\nProduction mode:")
+		fmt.Println("  - Access: http://" + config.AppConfig.Listen + ":" + config.AppConfig.ServerPort)
+	}
+	fmt.Println()
+
 	if err := r.Run(config.AppConfig.Listen + ":" + config.AppConfig.ServerPort); err != nil {
 		panic(err)
 	}

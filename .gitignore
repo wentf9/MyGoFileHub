@@ -8,3 +8,4 @@ data/.secret_key
 AGENT_INSTRUCTIONS.md
 bin/MyGoFileHub
 .claude/settings.local.json
+frontend/dist/

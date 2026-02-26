@@ -37,6 +37,15 @@ if (!(Test-Path $binDir)) {
     New-Item -ItemType Directory -Path $binDir | Out-Null
 }
 
+# Copy frontend dist to embed directory
+Write-Host ""
+Write-Host "Copying frontend dist to embed directory..." -ForegroundColor Gray
+$EmbedDir = Join-Path $RootDir "frontend" "dist"
+if (Test-Path $EmbedDir) {
+    Remove-Item -Recurse -Force $EmbedDir
+}
+Copy-Item -Recurse (Join-Path $RootDir "frontend" "my-go-file-hub-ui" "dist") $EmbedDir
+
 # Build backend binary
 Write-Host ""
 Write-Host "Getting version info..." -ForegroundColor Gray
@@ -66,9 +75,9 @@ $LDFLAGS += " -X 'github.com/wentf9/MyGoFileHub/internal/application.version=$VE
 $LDFLAGS += " -X 'github.com/wentf9/MyGoFileHub/internal/application.gitCommit=$GIT_COMMIT'"
 $LDFLAGS += " -X 'github.com/wentf9/MyGoFileHub/internal/application.buildTime=$BUILD_TIME'"
 
-Write-Host "Compiling Go binary with ldflags..."
+Write-Host "Compiling Go binary with ldflags (CGO enabled for SQLite)..."
 Set-Location $RootDir
-$env:CGO_ENABLED = "0"
+$env:CGO_ENABLED = "1"
 go build -ldflags "$LDFLAGS" -o "$binDir\MyGoFileHub.exe" main.go
 
 Write-Host ""

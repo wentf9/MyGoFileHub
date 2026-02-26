@@ -29,3 +29,7 @@
 ### 进行中 🔄
 
 ### 计划中 📋
+
+- [ ] #002 - 单文件分发支持 (Single Binary Distribution)
+  - 文件：`tasks/002-single-binary-distribution.md`
+  - 描述：使用 go:embed 嵌入前端静态文件，实现单二进制文件分发，支持开发/生产模式切换
