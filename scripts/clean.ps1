@@ -6,12 +6,12 @@ $ErrorActionPreference = "Stop"
 # Get script and root directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
-$FrontendDir = Join-Path $RootDir "frontend" "my-go-file-hub-ui"
+$FrontendDir = Join-Path $RootDir -ChildPath "frontend\my-go-file-hub-ui"
 
 Write-Host "Cleaning build artifacts..."
 
 # Clean frontend build
-$FrontendDist = Join-Path $FrontendDir "dist"
+$FrontendDist = Join-Path $FrontendDir -ChildPath "dist"
 if (Test-Path $FrontendDist) {
     Write-Host "  Removing frontend/dist..."
     Remove-Item -Recurse -Force $FrontendDist
@@ -25,7 +25,7 @@ if (Test-Path $FrontendDist) {
 # }
 
 # Clean backend binary
-$BinDir = Join-Path $RootDir "bin"
+$BinDir = Join-Path $RootDir -ChildPath "bin"
 if (Test-Path $BinDir) {
     Write-Host "  Removing bin/..."
     Remove-Item -Recurse -Force $BinDir

@@ -15,8 +15,8 @@ $RootDir = Split-Path -Parent $ScriptDir
 Set-Location $RootDir
 
 # Ensure directories exist
-$logDir = Join-Path $RootDir "logs"
-$dataDir = Join-Path $RootDir "data"
+$logDir = Join-Path $RootDir -ChildPath "logs"
+$dataDir = Join-Path $RootDir -ChildPath "data"
 
 if (!(Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir | Out-Null

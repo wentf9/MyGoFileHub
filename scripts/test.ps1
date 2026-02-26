@@ -25,7 +25,7 @@ if ($Pattern) {
 Write-Host ""
 Write-Host "Running frontend tests (if any)..."
 
-$FrontendDir = Join-Path $RootDir "frontend" "my-go-file-hub-ui"
+$FrontendDir = Join-Path $RootDir -ChildPath "frontend\my-go-file-hub-ui"
 Set-Location $FrontendDir
 
 # Check if there's a test script in package.json

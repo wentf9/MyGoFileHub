@@ -23,9 +23,9 @@ Write-Host "[Step 2/2] Building backend..." -ForegroundColor Green
 Write-Host "----------------------------------------" -ForegroundColor Gray
 
 # Ensure directories exist
-$logDir = Join-Path $RootDir "logs"
-$dataDir = Join-Path $RootDir "data"
-$binDir = Join-Path $RootDir "bin"
+$logDir = Join-Path $RootDir -ChildPath "logs"
+$dataDir = Join-Path $RootDir -ChildPath "data"
+$binDir = Join-Path $RootDir -ChildPath "bin"
 
 if (!(Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir | Out-Null
