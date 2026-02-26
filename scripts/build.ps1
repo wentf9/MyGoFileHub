@@ -40,7 +40,7 @@ if (!(Test-Path $binDir)) {
 # Copy frontend dist to embed directory
 Write-Host ""
 Write-Host "Copying frontend dist to embed directory..." -ForegroundColor Gray
-$EmbedDir = Join-Path $RootDir "frontend" "dist"
+$EmbedDir = Join-Path $RootDir -ChildPath "frontend\dist"
 if (Test-Path $EmbedDir) {
     Remove-Item -Recurse -Force $EmbedDir
 }
