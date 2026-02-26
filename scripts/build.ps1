@@ -44,7 +44,7 @@ $EmbedDir = Join-Path $RootDir "frontend" "dist"
 if (Test-Path $EmbedDir) {
     Remove-Item -Recurse -Force $EmbedDir
 }
-Copy-Item -Recurse (Join-Path $RootDir "frontend" "my-go-file-hub-ui" "dist") $EmbedDir
+Copy-Item -Recurse (Join-Path $RootDir -ChildPath "frontend\my-go-file-hub-ui\dist") $EmbedDir
 
 # Build backend binary
 Write-Host ""

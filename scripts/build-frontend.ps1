@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 # Get script and root directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
-$FrontendDir = Join-Path $RootDir "frontend" "my-go-file-hub-ui"
+$FrontendDir = Join-Path $RootDir -ChildPath "frontend\my-go-file-hub-ui"
 
 # Change to frontend directory
 Set-Location $FrontendDir
@@ -23,7 +23,7 @@ Write-Host "Working directory: $FrontendDir"
 npm run build
 
 # Check output
-$DistDir = Join-Path $FrontendDir "dist"
+$DistDir = Join-Path $FrontendDir -ChildPath "dist"
 
 if (Test-Path $DistDir) {
     Write-Host "Frontend built successfully!"
