@@ -1,4 +1,4 @@
-import { type Component, createEffect, For, Show, onMount } from "solid-js";
+import { type Component, createEffect, For, Show } from "solid-js";
 import { store } from "./store";
 import { Plus, X, Folder, HardDrive, Settings, Monitor, ChevronRight, File, Image, Video, FileText, Loader2, LogOut, User as UserIcon, ArrowUp, RotateCw } from "lucide-solid";
 import { type FileNode } from "./types";
@@ -19,8 +19,10 @@ const FileIcon: Component<{ file: FileNode }> = (props) => {
 };
 
 const App: Component = () => {
-  onMount(() => {
-    if (store.state.isAuthenticated) {
+  // 当用户认证时，加载存储源
+  // 这主要用于从 localStorage 恢复登录状态的情况
+  createEffect(() => {
+    if (store.state.isAuthenticated && store.state.drives.length === 0) {
       store.loadDrives();
     }
   });

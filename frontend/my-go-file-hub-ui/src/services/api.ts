@@ -140,9 +140,15 @@ export const FileService = {
 
   /**
    * 获取所有存储源
+   * 注意：后端返回 snake_case 字段 (updated_at)，需要适配为 camelCase (updatedAt)
    */
   async fetchSources(): Promise<StorageSource[]> {
-    return request<StorageSource[]>(`${API_BASE}/sources`);
+    const data = await request<any[]>(`${API_BASE}/sources`);
+    // 适配后端字段名：updated_at -> updatedAt
+    return (data || []).map((item: any) => ({
+      ...item,
+      updatedAt: item.updated_at || item.updatedAt
+    }));
   },
 
   /**

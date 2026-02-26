@@ -37,6 +37,8 @@ export const store = {
         isAuthenticated: true,
         user: { id: 0, username, role: "user" }
       });
+      // 登录成功后立即加载存储源
+      await store.loadDrives();
       return true;
     } catch (err) {
       console.error("Login failed:", err);
