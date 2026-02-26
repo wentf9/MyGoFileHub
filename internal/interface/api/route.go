@@ -29,6 +29,7 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	userHandler := handlers.NewUserHandler(userService)
 	sourceHandler := handlers.NewSourceHandler(sourceService)
 	webDAVHandler := handlers.NewWebDAVHandler(fileService, authService)
+	versionHandler := handlers.VersionHandler
 
 	file := r.Group("/")
 	file.Use(middleware.ClientCheck(), middleware.JWTAuth())
@@ -53,6 +54,9 @@ func InitRouter(fileService *application.FileService, authService *application.A
 	{
 		// 公开接口
 		v1.POST("/login", authHandler.Login).Use(middleware.ClientCheck())
+
+		// 版本信息 (公开接口)
+		v1.GET("/version", versionHandler)
 
 		// 用户管理 (通常仅限 admin)
 		users := v1.Group("/users")

@@ -16,6 +16,14 @@ import (
 )
 
 func main() {
+	// 检查 --version 或 -v 参数
+	for _, arg := range os.Args[1:] {
+		if arg == "--version" || arg == "-v" {
+			application.PrintVersion()
+			return
+		}
+	}
+
 	// 1. 准备测试目录
 	_ = os.MkdirAll(config.AppConfig.DataDir+"/test_storage", 0755)
 
