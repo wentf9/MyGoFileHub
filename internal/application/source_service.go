@@ -43,6 +43,10 @@ func (s *SourceService) GetSource(ctx context.Context, id uint) (*model.StorageS
 }
 
 func (s *SourceService) CreateSource(ctx context.Context, source *model.StorageSource) error {
+	// 验证存储源 key 的合法性
+	if err := model.ValidateStorageKey(source.Key); err != nil {
+		return err
+	}
 	if err := s.encryptSensitiveConfig(source); err != nil {
 		return err
 	}
@@ -53,7 +57,13 @@ func (s *SourceService) UpdateSource(ctx context.Context, source *model.StorageS
 	// 获取旧信息，用于清理缓存（特别是 Key 变更的情况）以及恢复未修改的密码
 	oldSource, err := s.sourceRepo.FindByID(ctx, source.ID)
 	if err == nil && oldSource != nil {
-		s.fileService.ClearDriverCache(oldSource.Key)
+		// 如果 key 发生变更，验证新 key 的合法性
+		if oldSource.Key != source.Key {
+			if err := model.ValidateStorageKey(source.Key); err != nil {
+				return err
+			}
+			s.fileService.ClearDriverCache(oldSource.Key)
+		}
 		s.restoreUnchangedSensitiveConfig(source, oldSource)
 	}
 

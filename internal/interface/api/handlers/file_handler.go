@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/wentf9/MyGoFileHub/internal/application"
-
 	"github.com/gin-gonic/gin"
+	"github.com/wentf9/MyGoFileHub/internal/application"
+	"github.com/wentf9/MyGoFileHub/internal/domain/model"
 )
 
 type FileHandler struct {
@@ -118,6 +118,12 @@ func (h *FileHandler) PostHandler(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required in multipart form"})
+		return
+	}
+
+	// 验证文件名
+	if err := model.ValidateFileName(file.Filename); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -27,9 +27,10 @@
 - [x] #001 - 添加版本号信息注入 (Version Info Injection)
 - [x] #002 - 单文件分发支持 (Single Binary Distribution)
 - [x] #003 - 静态资源缓存优化 (Static Asset Caching)
+- [x] #004 - 前后端输入校验与安全防护 (Input Validation and Security)
 
 ### 进行中 🔄
 
 ### 计划中 📋
 
-- [ ] #004 - ETag 支持 (可选)
+- [ ] #005 - 速率限制 (Rate Limiting) (可选)
