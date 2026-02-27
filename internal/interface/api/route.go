@@ -52,7 +52,9 @@ func InitRouter(
 	// ---------------------------------------------------------
 	if staticFS != nil {
 		// 服务前端静态文件到 /ui 路径下
-		r.StaticFS("/ui", http.FS(staticFS))
+		ui := r.Group("/ui")
+		ui.Use(middleware.StaticCache())
+		ui.StaticFS("", http.FS(staticFS))
 	}
 
 	// ---------------------------------------------------------
