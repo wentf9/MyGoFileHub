@@ -26,9 +26,10 @@
 - [x] 创建 scripts 目录下的运行脚本（Bash + PowerShell 双版本）
 - [x] #001 - 添加版本号信息注入 (Version Info Injection)
 - [x] #002 - 单文件分发支持 (Single Binary Distribution)
+- [x] #003 - 静态资源缓存优化 (Static Asset Caching)
 
 ### 进行中 🔄
 
 ### 计划中 📋
 
-- [ ] #003 - 静态资源缓存优化 (Static Asset Caching)
+- [ ] #004 - ETag 支持 (可选)
