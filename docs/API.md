@@ -144,6 +144,27 @@
 
 ---
 
+## 5. 用户管理 (Users)
+*仅限管理员权限。*
+
+### 5.1 获取用户列表
+- **方法**: `GET`
+- **URL**: `/@api/v1/users`
+
+### 5.2 创建用户
+- **方法**: `POST`
+- **URL**: `/@api/v1/users`
+- **Request Body**:
+  ```json
+  {
+      "username": "newuser",
+      "password": "securepassword",
+      "role": "user"
+  }
+  ```
+
+---
+
 ## 6. 版本信息 (Version)
 
 ### 6.1 获取系统版本信息
@@ -160,26 +181,5 @@
           "go_version": "go1.25.5",
           "platform": "windows/amd64"
       }
-  }
-  ```
-
----
-
-## 7. 用户管理 (Users)
-*仅限管理员权限。*
-
-### 7.1 获取用户列表
-- **方法**: `GET`
-- **URL**: `/@api/v1/users`
-
-### 7.2 创建用户
-- **方法**: `POST`
-- **URL**: `/@api/v1/users`
-- **Request Body**:
-  ```json
-  {
-      "username": "newuser",
-      "password": "securepassword",
-      "role": "user"
   }
   ```
